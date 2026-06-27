@@ -228,6 +228,7 @@ function App() {
   const [paletteIndex, setPaletteIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(formatTime(new Date()));
   const [toast, setToast] = useState<string | null>(null);
+  const [imagePreviewIndex, setImagePreviewIndex] = useState<number | null>(null);
   const configRef = useRef(config);
   const themeListRef = useRef(themeList);
   const hasUnsavedRef = useRef(hasUnsavedChanges);
@@ -390,6 +391,10 @@ function App() {
     },
     editorProps: {
       handleDOMEvents: {
+        click: (_view, event) => {
+          handleImageClick(event);
+          return false;
+        },
         paste: (_view, event) => {
           const items = (event as ClipboardEvent).clipboardData?.items;
           if (!items) return false;
@@ -415,6 +420,42 @@ function App() {
 
   function getBase(p: string) {
     return p.replace(/\\/g, "/").split("/").pop() || "";
+  }
+
+  function getAllImages(): string[] {
+    if (!editorRef.current) return [];
+    const html = editorRef.current.getHTML();
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return Array.from(div.querySelectorAll("img")).map((img) => img.getAttribute("src") || "");
+  }
+
+  function handleImageClick(e: Event) {
+    const target = e.target as HTMLElement;
+    if (target.tagName !== "IMG") return;
+    const src = target.getAttribute("src");
+    if (!src) return;
+    e.preventDefault();
+    const images = getAllImages();
+    const idx = images.indexOf(src);
+    setImagePreviewIndex(idx >= 0 ? idx : 0);
+  }
+
+  async function saveImageToFile(src: string) {
+    const selected = await save({
+      filters: [{ name: "Image", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp"] }],
+    });
+    if (!selected) return;
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const buffer = await blob.arrayBuffer();
+      const uint8 = new Uint8Array(buffer);
+      await writeFile(selected, uint8);
+      showToast("Image saved");
+    } catch {
+      showToast("Failed to save image");
+    }
   }
 
   async function copyImageToMdFolder(srcPath: string) {
@@ -537,6 +578,26 @@ function App() {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.code === "AltLeft" || e.code === "AltRight") {
         e.preventDefault();
+        return;
+      }
+
+      if (imagePreviewIndex !== null) {
+        const images = getAllImages();
+        if (code === "Escape") {
+          e.preventDefault();
+          setImagePreviewIndex(null);
+          return;
+        }
+        if (code === "ArrowLeft") {
+          e.preventDefault();
+          setImagePreviewIndex((prev) => prev !== null ? (prev - 1 + images.length) % images.length : 0);
+          return;
+        }
+        if (code === "ArrowRight") {
+          e.preventDefault();
+          setImagePreviewIndex((prev) => prev !== null ? (prev + 1) % images.length : 0);
+          return;
+        }
         return;
       }
 
@@ -801,6 +862,39 @@ function App() {
           </div>
         </div>
       )}
+      {imagePreviewIndex !== null && (() => {
+        const images = getAllImages();
+        const src = images[imagePreviewIndex];
+        if (!src) return null;
+        return (
+          <div className="image-preview-overlay" onClick={() => setImagePreviewIndex(null)}>
+            <div className="image-preview-topbar">
+              <span className="image-preview-counter">{imagePreviewIndex + 1} / {images.length}</span>
+              <div className="image-preview-actions">
+                <button className="image-preview-btn" title="Save image" onClick={(e) => { e.stopPropagation(); saveImageToFile(src); }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+                <button className="image-preview-btn" title="Close" onClick={(e) => { e.stopPropagation(); setImagePreviewIndex(null); }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+            <div className="image-preview-body" onClick={(e) => e.stopPropagation()}>
+              {images.length > 1 && (
+                <button className="image-preview-nav image-preview-nav-left" title="Previous" onClick={() => setImagePreviewIndex((prev) => prev !== null ? (prev - 1 + images.length) % images.length : 0)}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+              )}
+              <img src={src} className="image-preview-img" />
+              {images.length > 1 && (
+                <button className="image-preview-nav image-preview-nav-right" title="Next" onClick={() => setImagePreviewIndex((prev) => prev !== null ? (prev + 1) % images.length : 0)}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
       {toast && (
         <div className="toast">{toast}</div>
       )}

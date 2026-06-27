@@ -135,6 +135,7 @@ body,
 
 .tiptap img {
   max-width: 100%;
+  max-height: 400px;
   height: auto;
   border-radius: 8px;
   margin: 0.5em 0;
@@ -410,4 +411,104 @@ body,
 @keyframes toast-out {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+.image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  animation: fade-in 0.15s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.image-preview-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  flex-shrink: 0;
+}
+
+.image-preview-counter {
+  color: #aaa;
+  font-size: 14px;
+  font-family: monospace;
+}
+
+.image-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.image-preview-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.image-preview-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.image-preview-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0 80px;
+  min-height: 0;
+}
+
+.image-preview-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  user-select: none;
+}
+
+.image-preview-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.image-preview-nav:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.image-preview-nav-left {
+  left: 16px;
+}
+
+.image-preview-nav-right {
+  right: 16px;
 }
