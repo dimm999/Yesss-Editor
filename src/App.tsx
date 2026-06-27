@@ -253,6 +253,7 @@ function App() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imagePreviewIndexRef = useRef(imagePreviewIndex);
   const draggedImageRef = useRef<string | null>(null);
+  const quitDialogRef = useRef(quitDialog);
 
   configRef.current = config;
   themeListRef.current = themeList;
@@ -264,6 +265,7 @@ function App() {
   paletteIndexRef.current = paletteIndex;
   paletteQueryRef.current = paletteQuery;
   imagePreviewIndexRef.current = imagePreviewIndex;
+  quitDialogRef.current = quitDialog;
 
   const switchTheme = useCallback(
     async (direction: "next" | "prev") => {
@@ -717,6 +719,16 @@ function App() {
       }
 
       const mod = e.ctrlKey || e.metaKey;
+
+      if (quitDialogRef.current) {
+        if (code === "Escape") {
+          e.preventDefault();
+          quitDialogRef.current.resolve("cancel");
+          setQuitDialog(null);
+          return;
+        }
+        return;
+      }
 
       if (showCommandPaletteRef.current) {
         if (code === "Escape") {
