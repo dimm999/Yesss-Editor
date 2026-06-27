@@ -557,7 +557,7 @@ function App() {
     await writeFile(imgPath, uint8);
 
     const blobUrl = URL.createObjectURL(file);
-    ed.chain().focus().setImage({ src: blobUrl, alt: file.name }).run();
+    ed.chain().focus().insertContent({ type: "image", attrs: { src: blobUrl, alt: file.name } }).run();
   }
 
   useEffect(() => {
