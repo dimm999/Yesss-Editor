@@ -1,0 +1,20 @@
+{
+  "name": "Dark",
+  "background": "#1a1a2e",
+  "text": "#e0e0e0",
+  "selection": "#3a3a5e",
+  "placeholder": "#555555",
+  "heading": "#ffffff",
+  "strong": "#ffffff",
+  "em": "#cccccc",
+  "s": "#888888",
+  "blockquote-border": "#6c63ff",
+  "blockquote-text": "#aaaaaa",
+  "code-bg": "#2a2a3e",
+  "code-text": "#e06c75",
+  "pre-bg": "#16213e",
+  "pre-text": "#e0e0e0",
+  "hr": "#333333",
+  "scrollbar": "#333333",
+  "scrollbar-hover": "#555555"
+}

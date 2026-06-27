@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicegui/tauri/dev/crates/tauri-cli/schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for Yesss Editor",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "fs:default",
+    {
+      "identifier": "fs:read-all",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:write-all",
+      "allow": [{ "path": "**" }]
+    },
+    "dialog:default",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "process:default",
+    "process:allow-exit"
+  ]
+}

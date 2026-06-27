@@ -1,0 +1,20 @@
+{
+  "name": "Light",
+  "background": "#ffffff",
+  "text": "#000000",
+  "selection": "#c2e8ff",
+  "placeholder": "#999999",
+  "heading": "#000000",
+  "strong": "#000000",
+  "em": "#333333",
+  "s": "#999999",
+  "blockquote-border": "#cccccc",
+  "blockquote-text": "#555555",
+  "code-bg": "#f0f0f0",
+  "code-text": "#c7254e",
+  "pre-bg": "#f5f5f5",
+  "pre-text": "#000000",
+  "hr": "#dddddd",
+  "scrollbar": "#cccccc",
+  "scrollbar-hover": "#aaaaaa"
+}
