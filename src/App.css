@@ -258,6 +258,10 @@ body,
 
 .app-container.zen .drag-bar {
   height: 0;
+  overflow: hidden;
+  padding: 0;
+  flex-shrink: 1;
+  min-height: 0;
 }
 
 .app-container.zen .editor-wrapper {
