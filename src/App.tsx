@@ -597,6 +597,8 @@ function App() {
         return;
       }
 
+      const code = e.code;
+
       if (imagePreviewIndex !== null) {
         const images = getAllImages();
         if (code === "Escape") {
@@ -618,7 +620,6 @@ function App() {
       }
 
       const mod = e.ctrlKey || e.metaKey;
-      const code = e.code;
 
       if (showCommandPaletteRef.current) {
         if (code === "Escape") {
