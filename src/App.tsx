@@ -424,10 +424,16 @@ function App() {
           }
           return false;
         },
-        drop: (_view, event) => {
+        drop: (view, event) => {
           const de = event as DragEvent;
           const dragSrc = de.dataTransfer?.getData("text/plain") || "";
-          if (!dragSrc) return false;
+          if (!dragSrc) {
+            const pos = view.posAtCoords({ left: de.clientX, top: de.clientY });
+            if (pos) {
+              editorRef.current?.commands.focus(pos.pos);
+            }
+            return false;
+          }
           const dropTarget = de.target as HTMLElement;
           if (dropTarget.tagName !== "IMG") return false;
           const dropSrc = dropTarget.getAttribute("src") || "";
