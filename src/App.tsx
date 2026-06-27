@@ -240,6 +240,7 @@ function App() {
   const paletteIndexRef = useRef(paletteIndex);
   const paletteQueryRef = useRef(paletteQuery);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const imagePreviewIndexRef = useRef(imagePreviewIndex);
 
   configRef.current = config;
   themeListRef.current = themeList;
@@ -250,6 +251,7 @@ function App() {
   paletteFilesRef.current = paletteFiles;
   paletteIndexRef.current = paletteIndex;
   paletteQueryRef.current = paletteQuery;
+  imagePreviewIndexRef.current = imagePreviewIndex;
 
   const switchTheme = useCallback(
     async (direction: "next" | "prev") => {
@@ -590,10 +592,14 @@ function App() {
       if (imagePaths.length === 0) return;
       (async () => {
         for (const p of imagePaths) {
-          const result = await copyImageToMdFolder(p);
-          if (result && editorRef.current) {
-            const name = p.split(/[/\\]/).pop() || "image";
-            editorRef.current.chain().focus().setImage({ src: result.blobUrl, alt: name }).run();
+          const data = await readFile(p);
+          const ext = p.split(".").pop()?.toLowerCase() || "png";
+          const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+          const blob = new Blob([data], { type: mime });
+          const blobUrl = URL.createObjectURL(blob);
+          const name = p.split(/[/\\]/).pop() || "image";
+          if (editorRef.current) {
+            editorRef.current.chain().focus().setImage({ src: blobUrl, alt: name }).run();
           }
         }
       })();
@@ -641,7 +647,7 @@ function App() {
 
       const code = e.code;
 
-      if (imagePreviewIndex !== null) {
+      if (imagePreviewIndexRef.current !== null) {
         const images = getAllImages();
         if (code === "Escape") {
           e.preventDefault();
