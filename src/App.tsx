@@ -179,19 +179,23 @@ async function listThemes(): Promise<string[]> {
 }
 
 async function scanMdFiles(dirPath: string): Promise<MdFile[]> {
+  const normalized = dirPath.replace(/\\/g, "/");
   const results: MdFile[] = [];
   try {
-    const entries = await readDir(dirPath);
+    const entries = await readDir(normalized);
     for (const entry of entries) {
-      const fullPath = `${dirPath}/${entry.name}`;
+      if (!entry.name) continue;
+      const fullPath = `${normalized}/${entry.name}`;
       if (entry.isDirectory) {
         const nested = await scanMdFiles(fullPath);
         results.push(...nested);
-      } else if (entry.name?.endsWith(".md")) {
+      } else if (entry.name.endsWith(".md")) {
         results.push({ name: entry.name, path: fullPath });
       }
     }
-  } catch {}
+  } catch (e) {
+    console.error("scanMdFiles error:", e);
+  }
   return results;
 }
 
@@ -326,7 +330,7 @@ function App() {
       multiple: false,
     });
     if (!selected) return;
-    setCurrentFolder(selected as string);
+    setCurrentFolder((selected as string).replace(/\\/g, "/"));
   }
 
   function toggleInfoPanel() {
@@ -531,31 +535,31 @@ function App() {
     if (!ready || !editor) return;
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Alt") {
+      if (e.code === "AltLeft" || e.code === "AltRight") {
         e.preventDefault();
         return;
       }
 
       const mod = e.ctrlKey || e.metaKey;
-      const key = e.key;
+      const code = e.code;
 
       if (showCommandPaletteRef.current) {
-        if (key === "Escape") {
+        if (code === "Escape") {
           e.preventDefault();
           closeCommandPalette();
           return;
         }
-        if (key === "ArrowDown") {
+        if (code === "ArrowDown") {
           e.preventDefault();
           setPaletteIndex((prev) => Math.min(prev + 1, paletteFilesRef.current.length - 1));
           return;
         }
-        if (key === "ArrowUp") {
+        if (code === "ArrowUp") {
           e.preventDefault();
           setPaletteIndex((prev) => Math.max(prev - 1, 0));
           return;
         }
-        if (key === "Enter") {
+        if (code === "Enter") {
           e.preventDefault();
           const idx = paletteIndexRef.current;
           if (paletteFilesRef.current[idx]) {
@@ -566,7 +570,7 @@ function App() {
         return;
       }
 
-      if (mod && key === "=") {
+      if (mod && code === "Equal") {
         e.preventDefault();
         const cfg = configRef.current;
         const s = Math.min(cfg.font_size + FONT_SIZE_STEP, FONT_SIZE_MAX);
@@ -576,7 +580,7 @@ function App() {
         saveConfig(c);
         return;
       }
-      if (mod && key === "-") {
+      if (mod && code === "Minus") {
         e.preventDefault();
         const cfg = configRef.current;
         const s = Math.max(cfg.font_size - FONT_SIZE_STEP, FONT_SIZE_MIN);
@@ -586,7 +590,7 @@ function App() {
         saveConfig(c);
         return;
       }
-      if (mod && key === "0") {
+      if (mod && code === "Digit0") {
         e.preventDefault();
         const cfg = configRef.current;
         const c = { ...cfg, font_size: FONT_SIZE_DEFAULT };
@@ -596,14 +600,14 @@ function App() {
         return;
       }
 
-      if (mod && key === ";") {
+      if (mod && code === "Semicolon") {
         e.preventDefault();
         const el = document.querySelector(".tiptap") as HTMLElement;
         const current = el ? (parseInt(el.style.maxWidth) || 900) : 900;
         applyEditorWidth(Math.min(current + EDITOR_WIDTH_STEP, EDITOR_WIDTH_MAX));
         return;
       }
-      if (mod && key === "'") {
+      if (mod && code === "Quote") {
         e.preventDefault();
         const el = document.querySelector(".tiptap") as HTMLElement;
         const current = el ? (parseInt(el.style.maxWidth) || 900) : 900;
@@ -611,60 +615,54 @@ function App() {
         return;
       }
 
-      if (mod && e.shiftKey && (key === "f" || key === "F")) {
+      if (mod && e.shiftKey && code === "KeyF") {
         e.preventDefault();
         toggleZenMode();
         return;
       }
 
-      if (mod && key === "[") {
+      if (mod && code === "BracketLeft") {
         e.preventDefault();
         switchTheme("prev");
         return;
       }
-      if (mod && key === "]") {
+      if (mod && code === "BracketRight") {
         e.preventDefault();
         switchTheme("next");
         return;
       }
 
-      if (mod && (key === "q" || key === "Q")) {
+      if (mod && code === "KeyQ") {
         e.preventDefault();
         handleQuit();
         return;
       }
 
-      if (mod && (key === "s" || key === "S")) {
+      if (mod && code === "KeyS") {
         e.preventDefault();
         saveFile();
         return;
       }
 
-      if (mod && !e.shiftKey && (key === "o" || key === "O")) {
+      if (mod && !e.shiftKey && code === "KeyO") {
         e.preventDefault();
         openFile();
         return;
       }
 
-      if (mod && e.shiftKey && (key === "o" || key === "O")) {
+      if (mod && e.shiftKey && code === "KeyO") {
         e.preventDefault();
         openFolder();
         return;
       }
 
-      if (mod && !e.shiftKey && (key === "p" || key === "P")) {
+      if (mod && code === "Backslash") {
         e.preventDefault();
         openCommandPalette();
         return;
       }
 
-      if (mod && key === "\\") {
-        e.preventDefault();
-        openCommandPalette();
-        return;
-      }
-
-      if (mod && !e.shiftKey && (key === "/" || key === ".")) {
+      if (mod && !e.shiftKey && (code === "Slash" || code === "Period")) {
         e.preventDefault();
         toggleInfoPanel();
         return;
@@ -682,12 +680,51 @@ function App() {
 
   return (
     <div className={`app-container ${zenMode ? "zen" : ""}`}>
-      <div className="drag-bar" data-tauri-drag-region />
+      <div className="drag-bar" data-tauri-drag-region>
+        {!zenMode && (
+          <div className="window-controls">
+            <button
+              className="window-btn"
+              title="Minimize"
+              onClick={(e) => {
+                e.stopPropagation();
+                getCurrentWindow().minimize();
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="5.5" width="8" height="1" rx="0.5" fill="currentColor"/></svg>
+            </button>
+            <button
+              className="window-btn"
+              title="Maximize"
+              onClick={(e) => {
+                e.stopPropagation();
+                getCurrentWindow().toggleMaximize();
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+            </button>
+            <button
+              className="window-btn window-btn-close"
+              title="Close"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleQuit();
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        )}
+      </div>
       <div className="main-content">
         <div
           className="editor-wrapper"
-          onClick={() => {
+          onClick={(e) => {
             if (showInfoPanel) setShowInfoPanel(false);
+            const target = e.target as HTMLElement;
+            if (editorRef.current && !target.closest(".ProseMirror")) {
+              editorRef.current.commands.focus("end");
+            }
           }}
         >
           <EditorContent editor={editor} />

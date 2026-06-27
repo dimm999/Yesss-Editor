@@ -11,6 +11,10 @@ const files = [
   ["config.json", "config.json"],
   ["themes/light.json", "themes/light.json"],
   ["themes/dark.json", "themes/dark.json"],
+  ["themes/catppuccin.json", "themes/catppuccin.json"],
+  ["themes/tokyo-night.json", "themes/tokyo-night.json"],
+  ["themes/espresso.json", "themes/espresso.json"],
+  ["themes/my-theme.json", "themes/my-theme.json"],
 ];
 
 for (const [src, dest] of files) {

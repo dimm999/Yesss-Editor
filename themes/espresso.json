@@ -1,0 +1,20 @@
+{
+  "name": "Espresso",
+  "background": "#1e1e1e",
+  "text": "#d4d4d4",
+  "selection": "#4a4a4a",
+  "placeholder": "#6a6a6a",
+  "heading": "#ffffff",
+  "strong": "#e2b93d",
+  "em": "#40b5c4",
+  "s": "#6a6a6a",
+  "blockquote-border": "#e2b93d",
+  "blockquote-text": "#a1a1a1",
+  "code-bg": "#2d2d2d",
+  "code-text": "#f07178",
+  "pre-bg": "#2d2d2d",
+  "pre-text": "#d4d4d4",
+  "hr": "#3a3a3a",
+  "scrollbar": "#3a3a3a",
+  "scrollbar-hover": "#5a5a5a"
+}

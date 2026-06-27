@@ -1,0 +1,20 @@
+{
+  "name": "Catppuccin",
+  "background": "#1e1e2e",
+  "text": "#cdd6f4",
+  "selection": "#585b70",
+  "placeholder": "#6c7086",
+  "heading": "#cba6f7",
+  "strong": "#f5c2e7",
+  "em": "#a6e3a1",
+  "s": "#6c7086",
+  "blockquote-border": "#cba6f7",
+  "blockquote-text": "#bac2de",
+  "code-bg": "#313244",
+  "code-text": "#f38ba8",
+  "pre-bg": "#313244",
+  "pre-text": "#cdd6f4",
+  "hr": "#45475a",
+  "scrollbar": "#45475a",
+  "scrollbar-hover": "#585b70"
+}

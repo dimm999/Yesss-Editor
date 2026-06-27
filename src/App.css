@@ -33,6 +33,59 @@ body,
   flex-shrink: 0;
   -webkit-app-region: drag;
   app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  gap: 8px;
+}
+
+.window-controls {
+  display: flex;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.window-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: #c8c8c8;
+  color: var(--bg, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.window-btn:hover {
+  background: #a0a0a0;
+  transform: scale(1.15);
+}
+
+.window-btn:active {
+  transform: scale(0.9);
+}
+
+.window-btn svg {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.window-btn:hover svg {
+  opacity: 1;
+}
+
+.window-btn-close {
+  background: #ff5f57;
+}
+
+.window-btn-close:hover {
+  background: #e0443c;
 }
 
 .main-content {
@@ -48,6 +101,8 @@ body,
   overflow-y: scroll;
   padding: 32px;
   scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-wrapper::-webkit-scrollbar {
@@ -60,6 +115,9 @@ body,
   line-height: 1.625;
   color: var(--text, #000000);
   caret-color: transparent;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .tiptap {
@@ -67,7 +125,10 @@ body,
   outline: none;
   font-size: var(--font-size, 18px) !important;
   line-height: 1.625;
+  color: var(--text, #000000);
   max-width: var(--editor-max-width, 900px);
+  flex: 1;
+  min-height: 100%;
   margin-left: auto;
   margin-right: auto;
 }
@@ -327,8 +388,8 @@ body,
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: var(--text, #000000);
-  color: var(--bg, #ffffff);
+  background: #2d9d3a;
+  color: #ffffff;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
