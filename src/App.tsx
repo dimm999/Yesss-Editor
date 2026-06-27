@@ -589,9 +589,8 @@ function App() {
     const uint8 = new Uint8Array(arrayBuffer);
     await writeFile(imgPath, uint8);
 
-    const blobUrl = URL.createObjectURL(file);
     const pos = ed.state.selection.from;
-    ed.chain().focus().insertContentAt(pos, { type: "image", attrs: { src: blobUrl, alt: file.name } }).run();
+    ed.chain().focus().insertContentAt(pos, { type: "image", attrs: { src: imgPath, alt: file.name } }).run();
   }
 
   useEffect(() => {
