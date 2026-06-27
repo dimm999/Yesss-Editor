@@ -899,7 +899,7 @@ function App() {
               <div className="info-item">
                 <span className="info-label">Status</span>
                 <span className="info-value">
-                  {hasUnsavedChanges ? "🔴 Unsaved" : "🟢 Saved"}
+                  {currentFile ? (hasUnsavedChanges ? "🔴 Unsaved" : "🟢 Saved") : "🟡 New"}
                 </span>
               </div>
               <div className="info-item">
