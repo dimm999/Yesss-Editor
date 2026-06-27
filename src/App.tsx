@@ -88,7 +88,7 @@ const FONT_SIZE_DEFAULT = 18;
 
 const EDITOR_WIDTH_MIN = 400;
 const EDITOR_WIDTH_MAX = 1200;
-const EDITOR_WIDTH_STEP = 50;
+const EDITOR_WIDTH_STEP = 15;
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
@@ -137,13 +137,6 @@ function applyEditorWidth(width: number) {
   document.documentElement.style.setProperty("--editor-max-width", `${width}px`);
   const el = document.querySelector(".tiptap") as HTMLElement;
   if (el) el.style.setProperty("max-width", `${width}px`, "important");
-}
-
-function saveEditorWidth(width: number) {
-  applyEditorWidth(width);
-  const cfg = { ...configRef.current, editor_width: width };
-  setConfig(cfg);
-  saveConfig(cfg);
 }
 
 async function loadConfig(): Promise<Config> {
@@ -256,6 +249,7 @@ function App() {
   const imagePreviewIndexRef = useRef(imagePreviewIndex);
   const draggedImageRef = useRef<string | null>(null);
   const quitDialogRef = useRef(quitDialog);
+  const widthIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   configRef.current = config;
   themeListRef.current = themeList;
@@ -268,6 +262,13 @@ function App() {
   paletteQueryRef.current = paletteQuery;
   imagePreviewIndexRef.current = imagePreviewIndex;
   quitDialogRef.current = quitDialog;
+
+  function saveEditorWidth(width: number) {
+    applyEditorWidth(width);
+    const cfg = { ...configRef.current, editor_width: width };
+    setConfig(cfg);
+    saveConfig(cfg);
+  }
 
   const switchTheme = useCallback(
     async (direction: "next" | "prev") => {
@@ -289,16 +290,19 @@ function App() {
     []
   );
 
+  async function askUnsavedChanges(): Promise<"save" | "discard" | "cancel"> {
+    if (!hasUnsavedRef.current) return "discard";
+    return new Promise<"save" | "discard" | "cancel">((resolve) => {
+      setQuitDialog({ resolve });
+    });
+  }
+
   async function handleQuit() {
-    if (hasUnsavedRef.current) {
-      const result = await new Promise<"save" | "discard" | "cancel">((resolve) => {
-        setQuitDialog({ resolve });
-      });
-      if (result === "cancel") return;
-      if (result === "save") {
-        await saveFile();
-        if (!currentFileRef.current) return;
-      }
+    const result = await askUnsavedChanges();
+    if (result === "cancel") return;
+    if (result === "save") {
+      await saveFile();
+      if (!currentFileRef.current) return;
     }
     await exit(0);
   }
@@ -331,7 +335,13 @@ function App() {
     showToast("File saved");
   }
 
-  function newFile() {
+  async function newFile() {
+    const result = await askUnsavedChanges();
+    if (result === "cancel") return;
+    if (result === "save") {
+      await saveFile();
+      if (!currentFileRef.current) return;
+    }
     if (editorRef.current) {
       editorRef.current.commands.setContent("");
     }
@@ -340,6 +350,12 @@ function App() {
   }
 
   async function openFile() {
+    const result = await askUnsavedChanges();
+    if (result === "cancel") return;
+    if (result === "save") {
+      await saveFile();
+      if (!currentFileRef.current) return;
+    }
     const selected = await open({
       multiple: false,
       filters: [{ name: "Markdown", extensions: ["md"] }],
@@ -394,6 +410,12 @@ function App() {
   }
 
   async function selectPaletteFile(file: MdFile) {
+    const result = await askUnsavedChanges();
+    if (result === "cancel") return;
+    if (result === "save") {
+      await saveFile();
+      if (!currentFileRef.current) return;
+    }
     const content = await readTextFile(file.path);
     setCurrentFile(file.path);
     setHasUnsavedChanges(false);
@@ -796,14 +818,20 @@ function App() {
 
       if (mod && code === "Semicolon") {
         e.preventDefault();
-        const current = configRef.current.editor_width;
-        saveEditorWidth(Math.max(current - EDITOR_WIDTH_STEP, EDITOR_WIDTH_MIN));
+        if (!widthIntervalRef.current) {
+          const apply = () => saveEditorWidth(Math.max(configRef.current.editor_width - EDITOR_WIDTH_STEP, EDITOR_WIDTH_MIN));
+          apply();
+          widthIntervalRef.current = setInterval(apply, 80);
+        }
         return;
       }
       if (mod && code === "Quote") {
         e.preventDefault();
-        const current = configRef.current.editor_width;
-        saveEditorWidth(Math.min(current + EDITOR_WIDTH_STEP, EDITOR_WIDTH_MAX));
+        if (!widthIntervalRef.current) {
+          const apply = () => saveEditorWidth(Math.min(configRef.current.editor_width + EDITOR_WIDTH_STEP, EDITOR_WIDTH_MAX));
+          apply();
+          widthIntervalRef.current = setInterval(apply, 80);
+        }
         return;
       }
 
@@ -867,8 +895,23 @@ function App() {
       }
     }
 
+    function handleKeyUp(e: KeyboardEvent) {
+      if (widthIntervalRef.current && (e.code === "Semicolon" || e.code === "Quote")) {
+        clearInterval(widthIntervalRef.current);
+        widthIntervalRef.current = null;
+      }
+    }
+
     document.addEventListener("keydown", handleKeyDown, true);
-    return () => document.removeEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("keyup", handleKeyUp, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("keyup", handleKeyUp, true);
+      if (widthIntervalRef.current) {
+        clearInterval(widthIntervalRef.current);
+        widthIntervalRef.current = null;
+      }
+    };
   }, [ready, editor, switchTheme]);
 
   const wordCount = editor ? editor.getText().split(/\s+/).filter(Boolean).length : 0;
@@ -1122,11 +1165,26 @@ function App() {
         <div className="toast">{toast}</div>
       )}
       {quitDialog && (
-        <div className="quit-dialog-overlay">
+        <div className="quit-dialog-overlay" onKeyDown={(e) => {
+          if (e.key === "Escape") { quitDialog.resolve("cancel"); setQuitDialog(null); return; }
+          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            e.preventDefault();
+            const btns = (e.currentTarget.querySelector(".quit-dialog-actions") as HTMLElement)?.children;
+            if (!btns) return;
+            const active = document.activeElement;
+            let idx = Array.from(btns).indexOf(active as Element);
+            if (idx === -1) idx = 0;
+            else idx = e.key === "ArrowRight" ? (idx + 1) % btns.length : (idx - 1 + btns.length) % btns.length;
+            (btns[idx] as HTMLElement).focus();
+          }
+          if (e.key === "Enter") {
+            (document.activeElement as HTMLElement)?.click();
+          }
+        }}>
           <div className="quit-dialog">
             <p className="quit-dialog-text">You have unsaved changes.</p>
             <div className="quit-dialog-actions">
-              <button className="quit-dialog-btn quit-dialog-save" onClick={() => { quitDialog.resolve("save"); setQuitDialog(null); }}>Save</button>
+              <button autoFocus className="quit-dialog-btn quit-dialog-save" onClick={() => { quitDialog.resolve("save"); setQuitDialog(null); }}>Save</button>
               <button className="quit-dialog-btn quit-dialog-discard" onClick={() => { quitDialog.resolve("discard"); setQuitDialog(null); }}>Discard</button>
               <button className="quit-dialog-btn quit-dialog-cancel" onClick={() => { quitDialog.resolve("cancel"); setQuitDialog(null); }}>Cancel</button>
             </div>
