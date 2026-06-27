@@ -438,15 +438,16 @@ function App() {
         paste: (_view, event) => {
           const items = (event as ClipboardEvent).clipboardData?.items;
           if (!items) return false;
-          for (const item of Array.from(items)) {
-            if (item.type.startsWith("image/")) {
-              event.preventDefault();
+          const imageItems = Array.from(items).filter((item) => item.type.startsWith("image/"));
+          if (imageItems.length === 0) return false;
+          event.preventDefault();
+          (async () => {
+            for (const item of imageItems) {
               const file = item.getAsFile();
-              if (file) insertImageFromFile(file);
-              return true;
+              if (file) await insertImageFromFile(file);
             }
-          }
-          return false;
+          })();
+          return true;
         },
       },
     },
