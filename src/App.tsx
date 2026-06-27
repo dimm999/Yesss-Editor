@@ -4,6 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import {
   readTextFile,
   writeTextFile,
@@ -590,7 +591,7 @@ function App() {
     await writeFile(imgPath, uint8);
 
     const pos = ed.state.selection.from;
-    ed.chain().focus().insertContentAt(pos, { type: "image", attrs: { src: imgPath, alt: file.name } }).run();
+    ed.chain().focus().insertContentAt(pos, { type: "image", attrs: { src: convertFileSrc(imgPath), alt: file.name } }).run();
   }
 
   useEffect(() => {
