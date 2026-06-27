@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import {
@@ -412,6 +414,11 @@ function App() {
         placeholder: "Start typing...",
       }),
       Image,
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { class: "editor-link" },
+      }),
     ],
     autofocus: "end",
     onUpdate: () => {
@@ -919,6 +926,92 @@ function App() {
           }}
         >
           <EditorContent editor={editor} />
+          {editor && (
+            <BubbleMenu
+              editor={editor}
+              tippyOptions={{ duration: 150, placement: "top" }}
+              shouldShow={({ editor: e, state }) => {
+                if (!e.isFocused) return false;
+                const { from, to } = state.selection;
+                return from !== to;
+              }}
+            >
+              <div className="bubble-menu">
+                <button
+                  className={`bubble-btn ${editor.isActive("bold") ? "active" : ""}`}
+                  title="Bold"
+                  onClick={() => editor.chain().focus().toggleBold().run()}
+                >
+                  <strong>B</strong>
+                </button>
+                <button
+                  className={`bubble-btn ${editor.isActive("italic") ? "active" : ""}`}
+                  title="Italic"
+                  onClick={() => editor.chain().focus().toggleItalic().run()}
+                >
+                  <em>I</em>
+                </button>
+                <button
+                  className={`bubble-btn ${editor.isActive("underline") ? "active" : ""}`}
+                  title="Underline"
+                  onClick={() => editor.chain().focus().toggleUnderline().run()}
+                >
+                  <u>U</u>
+                </button>
+                <button
+                  className={`bubble-btn ${editor.isActive("strike") ? "active" : ""}`}
+                  title="Strikethrough"
+                  onClick={() => editor.chain().focus().toggleStrike().run()}
+                >
+                  <s>S</s>
+                </button>
+                <div className="bubble-separator" />
+                <button
+                  className={`bubble-btn ${editor.isActive("heading", { level: 2 }) ? "active" : ""}`}
+                  title="Heading"
+                  onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                >
+                  H2
+                </button>
+                <button
+                  className={`bubble-btn ${editor.isActive("heading", { level: 3 }) ? "active" : ""}`}
+                  title="Subheading"
+                  onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                >
+                  H3
+                </button>
+                <div className="bubble-separator" />
+                <button
+                  className={`bubble-btn ${editor.isActive("bulletList") ? "active" : ""}`}
+                  title="Bullet list"
+                  onClick={() => editor.chain().focus().toggleBulletList().run()}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="3" cy="5" r="2"/><circle cx="3" cy="12" r="2"/><circle cx="3" cy="19" r="2"/><rect x="8" y="4" width="14" height="2" rx="1"/><rect x="8" y="11" width="14" height="2" rx="1"/><rect x="8" y="18" width="14" height="2" rx="1"/></svg>
+                </button>
+                <button
+                  className={`bubble-btn ${editor.isActive("orderedList") ? "active" : ""}`}
+                  title="Numbered list"
+                  onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><text x="0" y="7" fontSize="8" fontWeight="bold">1.</text><text x="0" y="14" fontSize="8" fontWeight="bold">2.</text><text x="0" y="21" fontSize="8" fontWeight="bold">3.</text><rect x="8" y="4" width="14" height="2" rx="1"/><rect x="8" y="11" width="14" height="2" rx="1"/><rect x="8" y="18" width="14" height="2" rx="1"/></svg>
+                </button>
+                <button
+                  className={`bubble-btn ${editor.isActive("blockquote") ? "active" : ""}`}
+                  title="Quote"
+                  onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 14h12v2H4zM4 19h8v2H4z"/></svg>
+                </button>
+                <button
+                  className={`bubble-btn ${editor.isActive("code") ? "active" : ""}`}
+                  title="Inline code"
+                  onClick={() => editor.chain().focus().toggleCode().run()}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </button>
+              </div>
+            </BubbleMenu>
+          )}
         </div>
         {showInfoPanel && (
           <div className="info-panel">

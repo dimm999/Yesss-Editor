@@ -597,3 +597,52 @@ img.ProseMirror-selectednode {
 .quit-dialog-discard:hover {
   background: #fdecea;
 }
+
+.bubble-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--bg, #ffffff);
+  border: 1px solid var(--blockquote-border, #cccccc);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.bubble-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text, #000000);
+  font-size: 14px;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.bubble-btn:hover {
+  background: var(--selection, #c2e8ff);
+}
+
+.bubble-btn.active {
+  background: var(--selection, #c2e8ff);
+  color: var(--heading, #000000);
+}
+
+.bubble-separator {
+  width: 1px;
+  height: 18px;
+  background: var(--blockquote-border, #cccccc);
+  margin: 0 4px;
+}
+
+.editor-link {
+  color: #4a9eff;
+  text-decoration: underline;
+  cursor: pointer;
+}
