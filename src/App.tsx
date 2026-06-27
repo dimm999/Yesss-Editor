@@ -41,6 +41,7 @@ interface Config {
   theme: string;
   font_size: number;
   font_name: string;
+  editor_width: number;
 }
 
 interface MdFile {
@@ -53,6 +54,7 @@ const DEFAULT_CONFIG: Config = {
   font_size: 18,
   font_name:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  editor_width: 900,
 };
 
 const DEFAULT_THEME: Theme = {
@@ -132,6 +134,13 @@ function applyEditorWidth(width: number) {
   document.documentElement.style.setProperty("--editor-max-width", `${width}px`);
   const el = document.querySelector(".tiptap") as HTMLElement;
   if (el) el.style.setProperty("max-width", `${width}px`, "important");
+}
+
+function saveEditorWidth(width: number) {
+  applyEditorWidth(width);
+  const cfg = { ...configRef.current, editor_width: width };
+  setConfig(cfg);
+  saveConfig(cfg);
 }
 
 async function loadConfig(): Promise<Config> {
@@ -627,6 +636,7 @@ function App() {
       applyTheme(theme);
       applyFontSize(cfg.font_size);
       applyFontFamily(cfg.font_name);
+      applyEditorWidth(cfg.editor_width);
       setReady(true);
     }
     init();
@@ -730,16 +740,14 @@ function App() {
 
       if (mod && code === "Semicolon") {
         e.preventDefault();
-        const el = document.querySelector(".tiptap") as HTMLElement;
-        const current = el ? (parseInt(el.style.maxWidth) || 900) : 900;
-        applyEditorWidth(Math.min(current + EDITOR_WIDTH_STEP, EDITOR_WIDTH_MAX));
+        const current = configRef.current.editor_width;
+        saveEditorWidth(Math.max(current - EDITOR_WIDTH_STEP, EDITOR_WIDTH_MIN));
         return;
       }
       if (mod && code === "Quote") {
         e.preventDefault();
-        const el = document.querySelector(".tiptap") as HTMLElement;
-        const current = el ? (parseInt(el.style.maxWidth) || 900) : 900;
-        applyEditorWidth(Math.max(current - EDITOR_WIDTH_STEP, EDITOR_WIDTH_MIN));
+        const current = configRef.current.editor_width;
+        saveEditorWidth(Math.min(current + EDITOR_WIDTH_STEP, EDITOR_WIDTH_MAX));
         return;
       }
 
@@ -863,7 +871,7 @@ function App() {
         >
           <EditorContent editor={editor} />
         </div>
-        {zenMode && showInfoPanel && (
+        {showInfoPanel && (
           <div className="info-panel">
             <button
               className="info-panel-close"
