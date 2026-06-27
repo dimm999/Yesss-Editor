@@ -409,29 +409,34 @@ function App() {
         dragstart: (_view, event) => {
           const target = (event as DragEvent).target as HTMLElement;
           if (target.tagName === "IMG") {
-            (event as DragEvent).dataTransfer?.setData("text/uri-list", target.getAttribute("src") || "");
+            const de = event as DragEvent;
+            de.dataTransfer!.effectAllowed = "move";
+            de.dataTransfer!.setData("text/plain", target.getAttribute("src") || "");
           }
           return false;
         },
-        drop: (view, event) => {
+        drop: (_view, event) => {
           const de = event as DragEvent;
-          const draggedSrc = de.dataTransfer?.getData("text/uri-list") || "";
+          const dragSrc = de.dataTransfer?.getData("text/plain") || "";
+          if (!dragSrc) return false;
           const dropTarget = de.target as HTMLElement;
-          if (dropTarget.tagName !== "IMG" || !draggedSrc) return false;
+          if (dropTarget.tagName !== "IMG") return false;
           const dropSrc = dropTarget.getAttribute("src") || "";
-          if (draggedSrc !== dropSrc) return false;
+          if (dragSrc === dropSrc) return false;
           event.preventDefault();
-          const html = view.dom.innerHTML;
+          const html = editorRef.current?.getHTML() || "";
           const tmp = document.createElement("div");
           tmp.innerHTML = html;
           const imgs = Array.from(tmp.querySelectorAll("img"));
-          const dragIdx = imgs.findIndex((img) => img.getAttribute("src") === draggedSrc);
+          const dragIdx = imgs.findIndex((img) => img.getAttribute("src") === dragSrc);
           const dropIdx = imgs.findIndex((img) => img.getAttribute("src") === dropSrc);
           if (dragIdx < 0 || dropIdx < 0 || dragIdx === dropIdx) return true;
-          const dragClone = imgs[dragIdx].cloneNode(true);
-          imgs[dragIdx].replaceWith(imgs[dropIdx].cloneNode(true));
-          const allImgs = Array.from(tmp.querySelectorAll("img"));
-          allImgs[dropIdx].replaceWith(dragClone);
+          const dragEl = imgs[dragIdx];
+          if (dragIdx < dropIdx) {
+            dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx].nextSibling);
+          } else {
+            dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx]);
+          }
           editorRef.current?.commands.setContent(tmp.innerHTML);
           return true;
         },
