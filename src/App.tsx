@@ -239,6 +239,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState(formatTime(new Date()));
   const [toast, setToast] = useState<string | null>(null);
   const [imagePreviewIndex, setImagePreviewIndex] = useState<number | null>(null);
+  const [quitDialog, setQuitDialog] = useState<{ resolve: (v: "save" | "discard" | "cancel") => void } | null>(null);
   const configRef = useRef(config);
   const themeListRef = useRef(themeList);
   const hasUnsavedRef = useRef(hasUnsavedChanges);
@@ -286,11 +287,14 @@ function App() {
 
   async function handleQuit() {
     if (hasUnsavedRef.current) {
-      const confirmed = await ask(
-        "You have unsaved changes. Quit anyway?",
-        { title: "Yesss Editor", kind: "warning" }
-      );
-      if (!confirmed) return;
+      const result = await new Promise<"save" | "discard" | "cancel">((resolve) => {
+        setQuitDialog({ resolve });
+      });
+      if (result === "cancel") return;
+      if (result === "save") {
+        await saveFile();
+        if (!currentFileRef.current) return;
+      }
     }
     await exit(0);
   }
@@ -590,10 +594,27 @@ function App() {
     if (!editor) return;
     const el = editor.view.dom;
 
+    function markDraggable() {
+      el.querySelectorAll("img").forEach((img) => {
+        img.setAttribute("draggable", "true");
+      });
+    }
+    markDraggable();
+    const observer = new MutationObserver(markDraggable);
+    observer.observe(el, { childList: true, subtree: true });
+
     function onDragStart(e: DragEvent) {
       const target = e.target as HTMLElement;
       if (target.tagName === "IMG") {
         draggedImageRef.current = target.getAttribute("src") || "";
+        e.dataTransfer!.effectAllowed = "move";
+      }
+    }
+
+    function onDragOver(e: DragEvent) {
+      if (draggedImageRef.current) {
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = "move";
       }
     }
 
@@ -625,9 +646,12 @@ function App() {
     }
 
     el.addEventListener("dragstart", onDragStart, true);
+    el.addEventListener("dragover", onDragOver, true);
     el.addEventListener("drop", onDrop, true);
     return () => {
+      observer.disconnect();
       el.removeEventListener("dragstart", onDragStart, true);
+      el.removeEventListener("dragover", onDragOver, true);
       el.removeEventListener("drop", onDrop, true);
     };
   }, [editor]);
@@ -991,6 +1015,18 @@ function App() {
       })()}
       {toast && (
         <div className="toast">{toast}</div>
+      )}
+      {quitDialog && (
+        <div className="quit-dialog-overlay">
+          <div className="quit-dialog">
+            <p className="quit-dialog-text">You have unsaved changes.</p>
+            <div className="quit-dialog-actions">
+              <button className="quit-dialog-btn quit-dialog-save" onClick={() => { quitDialog.resolve("save"); setQuitDialog(null); }}>Save</button>
+              <button className="quit-dialog-btn quit-dialog-discard" onClick={() => { quitDialog.resolve("discard"); setQuitDialog(null); }}>Discard</button>
+              <button className="quit-dialog-btn quit-dialog-cancel" onClick={() => { quitDialog.resolve("cancel"); setQuitDialog(null); }}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

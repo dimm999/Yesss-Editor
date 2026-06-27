@@ -532,3 +532,68 @@ img.ProseMirror-selectednode {
 .image-preview-nav-right {
   right: 16px;
 }
+
+.quit-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quit-dialog {
+  background: var(--bg, #ffffff);
+  border: 1px solid var(--blockquote-border, #cccccc);
+  border-radius: 12px;
+  padding: 28px 32px;
+  min-width: 340px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+.quit-dialog-text {
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: var(--text, #000000);
+}
+
+.quit-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.quit-dialog-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--blockquote-border, #cccccc);
+  background: var(--bg, #ffffff);
+  color: var(--text, #000000);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.quit-dialog-btn:hover {
+  background: var(--selection, #c2e8ff);
+}
+
+.quit-dialog-save {
+  background: #2d9d3a;
+  color: #fff;
+  border-color: #2d9d3a;
+}
+
+.quit-dialog-save:hover {
+  background: #248a30;
+}
+
+.quit-dialog-discard {
+  color: #e0443c;
+  border-color: #e0443c;
+}
+
+.quit-dialog-discard:hover {
+  background: #fdecea;
+}
