@@ -251,6 +251,7 @@ function App() {
   const paletteQueryRef = useRef(paletteQuery);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imagePreviewIndexRef = useRef(imagePreviewIndex);
+  const draggedImageRef = useRef<string | null>(null);
 
   configRef.current = config;
   themeListRef.current = themeList;
@@ -419,15 +420,14 @@ function App() {
         dragstart: (_view, event) => {
           const target = (event as DragEvent).target as HTMLElement;
           if (target.tagName === "IMG") {
-            const de = event as DragEvent;
-            de.dataTransfer!.effectAllowed = "move";
-            de.dataTransfer!.setData("text/plain", target.getAttribute("src") || "");
+            draggedImageRef.current = target.getAttribute("src") || "";
           }
           return false;
         },
         drop: (view, event) => {
           const de = event as DragEvent;
-          const dragSrc = de.dataTransfer?.getData("text/plain") || "";
+          const dragSrc = draggedImageRef.current;
+          draggedImageRef.current = null;
           if (!dragSrc) {
             const pos = view.posAtCoords({ left: de.clientX, top: de.clientY });
             if (pos) {
@@ -436,8 +436,9 @@ function App() {
             return false;
           }
           const dropTarget = de.target as HTMLElement;
-          if (dropTarget.tagName !== "IMG") return false;
-          const dropSrc = dropTarget.getAttribute("src") || "";
+          const dropImg = dropTarget.tagName === "IMG" ? dropTarget : dropTarget.closest("img");
+          if (!dropImg) return false;
+          const dropSrc = dropImg.getAttribute("src") || "";
           if (dragSrc === dropSrc) return false;
           event.preventDefault();
           const html = editorRef.current?.getHTML() || "";
