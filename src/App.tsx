@@ -436,15 +436,29 @@ function App() {
           return true;
         },
         paste: (_view, event) => {
-          const items = (event as ClipboardEvent).clipboardData?.items;
-          if (!items) return false;
-          const imageItems = Array.from(items).filter((item) => item.type.startsWith("image/"));
-          if (imageItems.length === 0) return false;
+          const data = (event as ClipboardEvent).clipboardData;
+          if (!data) return false;
+          const imageExts = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
+          const files: File[] = [];
+          if (data.files && data.files.length > 0) {
+            for (const f of Array.from(data.files)) {
+              if (f.type.startsWith("image/")) files.push(f);
+            }
+          }
+          if (files.length === 0) {
+            const items = Array.from(data.items || []);
+            for (const item of items) {
+              if (item.type.startsWith("image/")) {
+                const f = item.getAsFile();
+                if (f) files.push(f);
+              }
+            }
+          }
+          if (files.length === 0) return false;
           event.preventDefault();
           (async () => {
-            for (const item of imageItems) {
-              const file = item.getAsFile();
-              if (file) await insertImageFromFile(file);
+            for (const f of files) {
+              await insertImageFromFile(f);
             }
           })();
           return true;
