@@ -607,7 +607,7 @@ function App() {
 
     function onDragStart(e: DragEvent) {
       const target = e.target as HTMLElement;
-      if (target.tagName === "IMG") {
+      if (target.tagName === "IMG" && el.contains(target)) {
         draggedImageRef.current = target.getAttribute("src") || "";
         e.dataTransfer!.effectAllowed = "move";
       }
@@ -626,7 +626,7 @@ function App() {
       if (!dragSrc) return;
       const dropTarget = e.target as HTMLElement;
       const dropImg = dropTarget.tagName === "IMG" ? dropTarget : (dropTarget.closest("img") as HTMLElement | null);
-      if (!dropImg) return;
+      if (!dropImg || !el.contains(dropImg)) return;
       const dropSrc = dropImg.getAttribute("src") || "";
       if (dragSrc === dropSrc) return;
       e.preventDefault();
@@ -647,14 +647,14 @@ function App() {
       editorRef.current?.commands.setContent(tmp.innerHTML);
     }
 
-    el.addEventListener("dragstart", onDragStart, true);
-    el.addEventListener("dragover", onDragOver, true);
-    el.addEventListener("drop", onDrop, true);
+    document.addEventListener("dragstart", onDragStart, true);
+    document.addEventListener("dragover", onDragOver, true);
+    document.addEventListener("drop", onDrop, true);
     return () => {
       observer.disconnect();
-      el.removeEventListener("dragstart", onDragStart, true);
-      el.removeEventListener("dragover", onDragOver, true);
-      el.removeEventListener("drop", onDrop, true);
+      document.removeEventListener("dragstart", onDragStart, true);
+      document.removeEventListener("dragover", onDragOver, true);
+      document.removeEventListener("drop", onDrop, true);
     };
   }, [editor]);
 
