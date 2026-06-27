@@ -411,6 +411,51 @@ function App() {
           handleImageClick(event);
           return false;
         },
+        dragstart: (_view, event) => {
+          const target = (event as DragEvent).target as HTMLElement;
+          if (target.tagName === "IMG") {
+            (event as DragEvent).dataTransfer?.setData("text/uri-list", target.getAttribute("src") || "");
+          }
+          return false;
+        },
+        drop: (view, event) => {
+          const de = event as DragEvent;
+          const draggedSrc = de.dataTransfer?.getData("text/uri-list") || "";
+          const dropTarget = de.target as HTMLElement;
+          if (dropTarget.tagName !== "IMG") return false;
+          const dropSrc = dropTarget.getAttribute("src") || "";
+          if (!draggedSrc || draggedSrc === dropSrc) return false;
+          event.preventDefault();
+          const html = view.state.doc.content.textContent
+            ? view.dom.innerHTML
+            : "";
+          const newHtml = view.dom.innerHTML;
+          const tmp = document.createElement("div");
+          tmp.innerHTML = newHtml;
+          const imgs = tmp.querySelectorAll("img");
+          let dragEl: Element | null = null;
+          let dropEl: Element | null = null;
+          imgs.forEach((img) => {
+            if (img.getAttribute("src") === draggedSrc) dragEl = img;
+            if (img.getAttribute("src") === dropSrc) dropEl = img;
+          });
+          if (dragEl && dropEl && dragEl !== dropEl) {
+            const dragParent = dragEl.parentNode!;
+            const dropParent = dropEl.parentNode!;
+            const dragNext = dragEl.nextSibling;
+            const dropNext = dropEl.nextSibling;
+            if (dragNext === dropEl) {
+              dropParent.insertBefore(dragEl, dropEl);
+            } else if (dropNext === dragEl) {
+              dragParent.insertBefore(dropEl, dragEl);
+            } else {
+              dragParent.insertBefore(dropEl, dragNext);
+              dropParent.insertBefore(dragEl, dropNext);
+            }
+            editorRef.current?.commands.setContent(tmp.innerHTML);
+          }
+          return true;
+        },
         paste: (_view, event) => {
           const items = (event as ClipboardEvent).clipboardData?.items;
           if (!items) return false;
@@ -544,17 +589,21 @@ function App() {
     const unlisten = getCurrentWindow().onDragDropEvent((event) => {
       if (event.payload.type !== "drop") return;
       const paths = event.payload.paths;
-      for (const p of paths) {
+      const imageExts = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
+      const imagePaths = paths.filter((p) => {
         const ext = p.split(".").pop()?.toLowerCase() || "";
-        if (["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"].includes(ext)) {
-          copyImageToMdFolder(p).then((result) => {
-            if (result && editorRef.current) {
-              const name = p.split(/[/\\]/).pop() || "image";
-              editorRef.current.chain().focus().setImage({ src: result.blobUrl, alt: name }).run();
-            }
-          });
+        return imageExts.includes(ext);
+      });
+      if (imagePaths.length === 0) return;
+      (async () => {
+        for (const p of imagePaths) {
+          const result = await copyImageToMdFolder(p);
+          if (result && editorRef.current) {
+            const name = p.split(/[/\\]/).pop() || "image";
+            editorRef.current.chain().focus().setImage({ src: result.blobUrl, alt: name }).run();
+          }
         }
-      }
+      })();
     });
 
     return () => { unlisten.then((fn) => fn()); };

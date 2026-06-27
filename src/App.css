@@ -139,6 +139,13 @@ body,
   height: auto;
   border-radius: 8px;
   margin: 0.5em 0;
+  cursor: grab;
+  transition: opacity 0.15s;
+}
+
+.tiptap img:active {
+  cursor: grabbing;
+  opacity: 0.6;
 }
 
 .tiptap p.is-editor-empty:first-child::before {
