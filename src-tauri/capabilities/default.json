@@ -20,6 +20,9 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "process:default",
-    "process:allow-exit"
+    "process:allow-exit",
+    "core:window:default",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen"
   ]
 }
