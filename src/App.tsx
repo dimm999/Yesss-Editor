@@ -10,7 +10,6 @@ import {
   writeFile,
   readFile,
   readDir,
-  homeDir,
   BaseDirectory,
 } from "@tauri-apps/plugin-fs";
 import { ask, save, open } from "@tauri-apps/plugin-dialog";
@@ -295,15 +294,9 @@ function App() {
     if (!ed) return;
     let filePath = currentFileRef.current;
     if (!filePath) {
-      let defaultPath: string | undefined;
-      if (currentFolderRef.current) {
-        defaultPath = currentFolderRef.current;
-      } else {
-        try { defaultPath = await homeDir(); } catch {}
-      }
       const selected = await save({
         filters: [{ name: "Markdown", extensions: ["md"] }],
-        defaultPath,
+        defaultPath: currentFolderRef.current || undefined,
       });
       if (!selected) return;
       filePath = selected;
