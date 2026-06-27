@@ -10,6 +10,7 @@ import {
   writeFile,
   readFile,
   readDir,
+  homeDir,
   BaseDirectory,
 } from "@tauri-apps/plugin-fs";
 import { ask, save, open } from "@tauri-apps/plugin-dialog";
@@ -294,8 +295,15 @@ function App() {
     if (!ed) return;
     let filePath = currentFileRef.current;
     if (!filePath) {
+      let defaultPath: string | undefined;
+      if (currentFolderRef.current) {
+        defaultPath = currentFolderRef.current;
+      } else {
+        try { defaultPath = await homeDir(); } catch {}
+      }
       const selected = await save({
         filters: [{ name: "Markdown", extensions: ["md"] }],
+        defaultPath,
       });
       if (!selected) return;
       filePath = selected;
@@ -307,6 +315,14 @@ function App() {
     await writeTextFile(filePath, content);
     setHasUnsavedChanges(false);
     showToast("File saved");
+  }
+
+  function newFile() {
+    if (editorRef.current) {
+      editorRef.current.commands.setContent("");
+    }
+    setCurrentFile(null);
+    setHasUnsavedChanges(false);
   }
 
   async function openFile() {
@@ -696,6 +712,12 @@ function App() {
       if (mod && code === "KeyQ") {
         e.preventDefault();
         handleQuit();
+        return;
+      }
+
+      if (mod && code === "KeyN") {
+        e.preventDefault();
+        newFile();
         return;
       }
 
