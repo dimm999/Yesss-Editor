@@ -206,7 +206,7 @@ function fuzzyMatch(query: string, target: string): boolean {
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function App() {
@@ -223,6 +223,7 @@ function App() {
   const [paletteFiles, setPaletteFiles] = useState<MdFile[]>([]);
   const [paletteIndex, setPaletteIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(formatTime(new Date()));
+  const [toast, setToast] = useState<string | null>(null);
   const configRef = useRef(config);
   const themeListRef = useRef(themeList);
   const hasUnsavedRef = useRef(hasUnsavedChanges);
@@ -233,6 +234,7 @@ function App() {
   const paletteFilesRef = useRef(paletteFiles);
   const paletteIndexRef = useRef(paletteIndex);
   const paletteQueryRef = useRef(paletteQuery);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   configRef.current = config;
   themeListRef.current = themeList;
@@ -299,6 +301,7 @@ function App() {
     const content = ed.getHTML();
     await writeTextFile(filePath, content);
     setHasUnsavedChanges(false);
+    showToast("File saved");
   }
 
   async function openFile() {
@@ -328,6 +331,12 @@ function App() {
 
   function toggleInfoPanel() {
     setShowInfoPanel((prev) => !prev);
+  }
+
+  function showToast(message: string) {
+    setToast(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2000);
   }
 
   function openCommandPalette() {
@@ -693,6 +702,14 @@ function App() {
             </button>
             <div className="info-panel-content">
               <div className="info-item">
+                <span className="info-label">File</span>
+                <span className="info-value">{currentFile ? getBase(currentFile) : "—"}</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Folder</span>
+                <span className="info-value">{currentFolder ? getBase(currentFolder) : "—"}</span>
+              </div>
+              <div className="info-item">
                 <span className="info-label">Words</span>
                 <span className="info-value">{wordCount}</span>
               </div>
@@ -746,6 +763,9 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+      {toast && (
+        <div className="toast">{toast}</div>
       )}
     </div>
   );

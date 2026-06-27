@@ -322,3 +322,27 @@ body,
 .palette-item.active {
   background: var(--selection, #c2e8ff);
 }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--text, #000000);
+  color: var(--bg, #ffffff);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 2000;
+  opacity: 0;
+  animation: toast-in 0.2s ease forwards, toast-out 0.3s ease 1.5s forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
