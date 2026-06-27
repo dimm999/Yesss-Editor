@@ -421,34 +421,20 @@ function App() {
           const dropSrc = dropTarget.getAttribute("src") || "";
           if (!draggedSrc || draggedSrc === dropSrc) return false;
           event.preventDefault();
-          const html = view.state.doc.content.textContent
-            ? view.dom.innerHTML
-            : "";
-          const newHtml = view.dom.innerHTML;
+          const html = view.dom.innerHTML;
           const tmp = document.createElement("div");
-          tmp.innerHTML = newHtml;
-          const imgs = tmp.querySelectorAll("img");
-          let dragEl: Element | null = null;
-          let dropEl: Element | null = null;
-          imgs.forEach((img) => {
-            if (img.getAttribute("src") === draggedSrc) dragEl = img;
-            if (img.getAttribute("src") === dropSrc) dropEl = img;
-          });
-          if (dragEl && dropEl && dragEl !== dropEl) {
-            const dragParent = dragEl.parentNode!;
-            const dropParent = dropEl.parentNode!;
-            const dragNext = dragEl.nextSibling;
-            const dropNext = dropEl.nextSibling;
-            if (dragNext === dropEl) {
-              dropParent.insertBefore(dragEl, dropEl);
-            } else if (dropNext === dragEl) {
-              dragParent.insertBefore(dropEl, dragEl);
-            } else {
-              dragParent.insertBefore(dropEl, dragNext);
-              dropParent.insertBefore(dragEl, dropNext);
-            }
-            editorRef.current?.commands.setContent(tmp.innerHTML);
-          }
+          tmp.innerHTML = html;
+          const imgs = Array.from(tmp.querySelectorAll("img"));
+          const dragIdx = imgs.findIndex((img) => img.getAttribute("src") === draggedSrc);
+          const dropIdx = imgs.findIndex((img) => img.getAttribute("src") === dropSrc);
+          if (dragIdx < 0 || dropIdx < 0 || dragIdx === dropIdx) return true;
+          const dragNode = imgs[dragIdx];
+          const dropNode = imgs[dropIdx];
+          const dragClone = dragNode.cloneNode(true);
+          dragNode.replaceWith(dropNode.cloneNode(true));
+          const allImgs = Array.from(tmp.querySelectorAll("img"));
+          allImgs[dropIdx].replaceWith(dragClone);
+          editorRef.current?.commands.setContent(tmp.innerHTML);
           return true;
         },
         paste: (_view, event) => {
@@ -593,14 +579,11 @@ function App() {
       (async () => {
         for (const p of imagePaths) {
           const data = await readFile(p);
+          const name = p.split(/[/\\]/).pop() || "image.png";
           const ext = p.split(".").pop()?.toLowerCase() || "png";
           const mime = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-          const blob = new Blob([data], { type: mime });
-          const blobUrl = URL.createObjectURL(blob);
-          const name = p.split(/[/\\]/).pop() || "image";
-          if (editorRef.current) {
-            editorRef.current.chain().focus().setImage({ src: blobUrl, alt: name }).run();
-          }
+          const file = new File([data], name, { type: mime });
+          await insertImageFromFile(file);
         }
       })();
     });
