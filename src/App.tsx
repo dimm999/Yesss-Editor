@@ -417,46 +417,6 @@ function App() {
           handleImageClick(event);
           return false;
         },
-        dragstart: (_view, event) => {
-          const target = (event as DragEvent).target as HTMLElement;
-          if (target.tagName === "IMG") {
-            draggedImageRef.current = target.getAttribute("src") || "";
-          }
-          return false;
-        },
-        drop: (view, event) => {
-          const de = event as DragEvent;
-          const dragSrc = draggedImageRef.current;
-          draggedImageRef.current = null;
-          if (!dragSrc) {
-            const pos = view.posAtCoords({ left: de.clientX, top: de.clientY });
-            if (pos) {
-              editorRef.current?.commands.focus(pos.pos);
-            }
-            return false;
-          }
-          const dropTarget = de.target as HTMLElement;
-          const dropImg = dropTarget.tagName === "IMG" ? dropTarget : dropTarget.closest("img");
-          if (!dropImg) return false;
-          const dropSrc = dropImg.getAttribute("src") || "";
-          if (dragSrc === dropSrc) return false;
-          event.preventDefault();
-          const html = editorRef.current?.getHTML() || "";
-          const tmp = document.createElement("div");
-          tmp.innerHTML = html;
-          const imgs = Array.from(tmp.querySelectorAll("img"));
-          const dragIdx = imgs.findIndex((img) => img.getAttribute("src") === dragSrc);
-          const dropIdx = imgs.findIndex((img) => img.getAttribute("src") === dropSrc);
-          if (dragIdx < 0 || dropIdx < 0 || dragIdx === dropIdx) return true;
-          const dragEl = imgs[dragIdx];
-          if (dragIdx < dropIdx) {
-            dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx].nextSibling);
-          } else {
-            dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx]);
-          }
-          editorRef.current?.commands.setContent(tmp.innerHTML);
-          return true;
-        },
         paste: (_view, event) => {
           const data = (event as ClipboardEvent).clipboardData;
           if (!data) return false;
@@ -625,6 +585,52 @@ function App() {
 
     return () => { unlisten.then((fn) => fn()); };
   }, [ready, editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const el = editor.view.dom;
+
+    function onDragStart(e: DragEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "IMG") {
+        draggedImageRef.current = target.getAttribute("src") || "";
+      }
+    }
+
+    function onDrop(e: DragEvent) {
+      const dragSrc = draggedImageRef.current;
+      draggedImageRef.current = null;
+      if (!dragSrc) return;
+      const dropTarget = e.target as HTMLElement;
+      const dropImg = dropTarget.tagName === "IMG" ? dropTarget : (dropTarget.closest("img") as HTMLElement | null);
+      if (!dropImg) return;
+      const dropSrc = dropImg.getAttribute("src") || "";
+      if (dragSrc === dropSrc) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const html = editorRef.current?.getHTML() || "";
+      const tmp = document.createElement("div");
+      tmp.innerHTML = html;
+      const imgs = Array.from(tmp.querySelectorAll("img"));
+      const dragIdx = imgs.findIndex((img) => img.getAttribute("src") === dragSrc);
+      const dropIdx = imgs.findIndex((img) => img.getAttribute("src") === dropSrc);
+      if (dragIdx < 0 || dropIdx < 0 || dragIdx === dropIdx) return;
+      const dragEl = imgs[dragIdx];
+      if (dragIdx < dropIdx) {
+        dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx].nextSibling);
+      } else {
+        dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx]);
+      }
+      editorRef.current?.commands.setContent(tmp.innerHTML);
+    }
+
+    el.addEventListener("dragstart", onDragStart, true);
+    el.addEventListener("drop", onDrop, true);
+    return () => {
+      el.removeEventListener("dragstart", onDragStart, true);
+      el.removeEventListener("drop", onDrop, true);
+    };
+  }, [editor]);
 
   useEffect(() => {
     const interval = setInterval(() => {
