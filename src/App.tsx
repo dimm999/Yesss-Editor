@@ -835,7 +835,7 @@ function App() {
                 getCurrentWindow().toggleMaximize();
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+              <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="1" fill="none"/></svg>
             </button>
             <button
               className="window-btn window-btn-close"
@@ -845,7 +845,7 @@ function App() {
                 handleQuit();
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              <svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
             </button>
           </div>
         )}
@@ -945,23 +945,23 @@ function App() {
               <span className="image-preview-counter">{imagePreviewIndex + 1} / {images.length}</span>
               <div className="image-preview-actions">
                 <button className="image-preview-btn" title="Save image" onClick={(e) => { e.stopPropagation(); saveImageToFile(src); }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button className="image-preview-btn" title="Close" onClick={(e) => { e.stopPropagation(); setImagePreviewIndex(null); }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
             </div>
             <div className="image-preview-body" onClick={(e) => e.stopPropagation()}>
               {images.length > 1 && (
                 <button className="image-preview-nav image-preview-nav-left" title="Previous" onClick={() => setImagePreviewIndex((prev) => prev !== null ? (prev - 1 + images.length) % images.length : 0)}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
               )}
               <img src={src} className="image-preview-img" />
               {images.length > 1 && (
                 <button className="image-preview-nav image-preview-nav-right" title="Next" onClick={() => setImagePreviewIndex((prev) => prev !== null ? (prev + 1) % images.length : 0)}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               )}
             </div>
