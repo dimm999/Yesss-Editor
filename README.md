@@ -39,7 +39,11 @@
 
 ## Video
 
-https://github.com/dimm999/Yesss-Editor/assets/video.mp4
+[https://github.com/dimm999/Yesss-Editor/assets/video.mp4](https://github.com/user-attachments/assets/35eb5fe9-6ffc-4e39-ba75-79231ab2a507)
+
+
+
+
 
 ## Shortcuts
 
