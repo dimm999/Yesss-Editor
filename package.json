@@ -21,8 +21,7 @@
     "@tiptap/react": "^2.14.0",
     "@tiptap/starter-kit": "^2.14.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tiptap-markdown": "^0.8.10"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.0",

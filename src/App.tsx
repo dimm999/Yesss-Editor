@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
-import { Markdown } from "tiptap-markdown";
+import { Node, mergeAttributes } from "@tiptap/core";
+import markdownit from "markdown-it";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import {
@@ -61,6 +61,145 @@ const DEFAULT_CONFIG: Config = {
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   editor_width: 900,
 };
+
+const md = markdownit({ html: true });
+
+function jsonToMarkdown(json: any): string {
+  const lines: string[] = [];
+  function walk(node: any, listIndex?: number) {
+    switch (node.type) {
+      case "doc":
+        node.content?.forEach((c: any) => walk(c));
+        break;
+      case "paragraph":
+        lines.push(inlineText(node));
+        lines.push("");
+        break;
+      case "heading":
+        const level = node.attrs?.level || 1;
+        lines.push("#".repeat(level) + " " + inlineText(node));
+        lines.push("");
+        break;
+      case "bulletList":
+        node.content?.forEach((c: any) => walk(c));
+        lines.push("");
+        break;
+      case "listItem":
+        lines.push("- " + inlineText(node));
+        break;
+      case "blockquote":
+        node.content?.forEach((c: any) => {
+          const txt = inlineText(c);
+          lines.push("> " + txt);
+        });
+        lines.push("");
+        break;
+      case "codeBlock":
+        lines.push("```" + (node.attrs?.language || ""));
+        lines.push(node.content?.[0]?.text || "");
+        lines.push("```");
+        lines.push("");
+        break;
+      case "horizontalRule":
+        lines.push("---");
+        lines.push("");
+        break;
+      case "image":
+        const alt = node.attrs?.alt || "";
+        const src = node.attrs?.src || "";
+        lines.push(`![${alt}](${src})`);
+        lines.push("");
+        break;
+      default:
+        node.content?.forEach((c: any) => walk(c));
+    }
+  }
+  function inlineText(node: any): string {
+    if (!node.content) return node.text || "";
+    return node.content.map((c: any) => {
+      if (c.type === "text") {
+        let t = c.text || "";
+        if (c.marks) {
+          for (const m of c.marks) {
+            if (m.type === "bold") t = `**${t}**`;
+            if (m.type === "italic") t = `*${t}*`;
+            if (m.type === "code") t = `\`${t}\``;
+            if (m.type === "strike") t = `~~${t}~~`;
+            if (m.type === "link") t = `[${t}](${m.attrs?.href || ""})`;
+          }
+        }
+        return t;
+      }
+      if (c.type === "hardBreak") return "\n";
+      if (c.type === "image") {
+        const alt = (c.attrs?.alt || "").replace(/ /g, "%20");
+        const src = (c.attrs?.src || "").replace(/ /g, "%20");
+        return `![${alt}](${src})`;
+      }
+      return inlineText(c);
+    }).join("");
+  }
+  walk(json);
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+
+const suppressUpdateRef = { current: false };
+const currentFolderModuleRef = { current: null as string | null };
+
+const RelativeImage = Node.create({
+  name: "image",
+  group: "block",
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: null },
+    };
+  },
+  parseHTML() {
+    return [{ tag: "img[src]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    const folder = currentFolderModuleRef.current;
+    const src = HTMLAttributes.src;
+    const isRelative = src && !src.startsWith("http") && !src.startsWith("data:") && !src.startsWith("blob:");
+    const decoded = isRelative ? decodeURIComponent(src) : src;
+    const resolved = isRelative && folder ? convertFileSrc(`${folder}/${decoded}`) : decoded;
+    return ["img", mergeAttributes(HTMLAttributes, { src: resolved })];
+  },
+});
+
+function loadMarkdown(editor: any, content: string) {
+  if (!content.trimStart().startsWith("<")) {
+    content = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, src) => {
+      return `![${alt.replace(/ /g, "%20")}](${src.replace(/ /g, "%20")})`;
+    });
+  }
+  let html: string;
+  if (content.trimStart().startsWith("<")) {
+    html = content;
+  } else {
+    html = md.render(content);
+  }
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  tmp.querySelectorAll("img").forEach((img) => {
+    const p = img.closest("p");
+    if (!p) return;
+    const after = document.createElement("p");
+    let found = false;
+    for (const child of Array.from(p.childNodes)) {
+      if (child === img) { found = true; continue; }
+      if (found) after.appendChild(child);
+    }
+    p.parentElement?.insertBefore(img, p.nextSibling);
+    if (after.childNodes.length) p.parentElement?.insertBefore(after, img.nextSibling);
+    if (!p.childNodes.length) p.remove();
+  });
+  suppressUpdateRef.current = true;
+  editor.commands.setContent(tmp.innerHTML);
+  suppressUpdateRef.current = false;
+}
 
 const DEFAULT_THEME: Theme = {
   name: "Light",
@@ -258,6 +397,7 @@ function App() {
   hasUnsavedRef.current = hasUnsavedChanges;
   currentFileRef.current = currentFile;
   currentFolderRef.current = currentFolder;
+  currentFolderModuleRef.current = currentFolder;
   showCommandPaletteRef.current = showCommandPalette;
   paletteFilesRef.current = paletteFiles;
   paletteIndexRef.current = paletteIndex;
@@ -331,7 +471,7 @@ function App() {
       const folder = getDir(filePath);
       setCurrentFolder(folder);
     }
-    const content = ed.storage.markdown.getMarkdown();
+    const content = jsonToMarkdown(ed.getJSON());
     await writeTextFile(filePath, content);
     setHasUnsavedChanges(false);
     showToast("File saved");
@@ -367,9 +507,11 @@ function App() {
     const content = await readTextFile(filePath);
     setCurrentFile(filePath);
     setCurrentFolder(getDir(filePath));
+    currentFolderRef.current = getDir(filePath);
+    currentFolderModuleRef.current = getDir(filePath);
     setHasUnsavedChanges(false);
     if (editorRef.current) {
-      editorRef.current.commands.setContent(content);
+      loadMarkdown(editorRef.current, content);
     }
   }
 
@@ -420,9 +562,12 @@ function App() {
     }
     const content = await readTextFile(file.path);
     setCurrentFile(file.path);
+    setCurrentFolder(getDir(file.path));
+    currentFolderRef.current = getDir(file.path);
+    currentFolderModuleRef.current = getDir(file.path);
     setHasUnsavedChanges(false);
     if (editorRef.current) {
-      editorRef.current.commands.setContent(content);
+      loadMarkdown(editorRef.current, content);
     }
     closeCommandPalette();
   }
@@ -437,22 +582,18 @@ function App() {
       Placeholder.configure({
         placeholder: "Start typing...",
       }),
-      Image,
+      RelativeImage,
       Underline,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: { class: "editor-link" },
       }),
-      Markdown.configure({
-        html: true,
-        linkify: false,
-        transformPastedText: true,
-        transformCopiedText: true,
-      }),
     ],
     autofocus: "end",
     onUpdate: () => {
-      setHasUnsavedChanges(true);
+      if (!suppressUpdateRef.current) {
+        setHasUnsavedChanges(true);
+      }
     },
     editorProps: {
       handleDOMEvents: {
@@ -518,14 +659,23 @@ function App() {
     return images;
   }
 
+  function resolveImageSrc(relativeSrc: string): string {
+    const folder = currentFolderRef.current;
+    if (!folder || !relativeSrc || relativeSrc.startsWith("http") || relativeSrc.startsWith("data:") || relativeSrc.startsWith("blob:")) {
+      return relativeSrc;
+    }
+    const decoded = decodeURIComponent(relativeSrc);
+    return convertFileSrc(`${folder}/${decoded}`);
+  }
+
   function handleImageClick(e: Event) {
     const target = e.target as HTMLElement;
     if (target.tagName !== "IMG") return;
-    const src = target.getAttribute("src");
-    if (!src) return;
+    const domSrc = target.getAttribute("src");
+    if (!domSrc) return;
     e.preventDefault();
     const images = getAllImages();
-    const idx = images.indexOf(src);
+    const idx = images.findIndex((s) => resolveImageSrc(s) === domSrc);
     setImagePreviewIndex(idx >= 0 ? idx : 0);
   }
 
@@ -535,7 +685,8 @@ function App() {
     });
     if (!selected) return;
     try {
-      const response = await fetch(src);
+      const resolvedSrc = resolveImageSrc(src);
+      const response = await fetch(resolvedSrc);
       const blob = await response.blob();
       const buffer = await blob.arrayBuffer();
       const uint8 = new Uint8Array(buffer);
@@ -560,15 +711,14 @@ function App() {
     }
 
     const folder = getDir(filePath);
-    const mdName = getBase(filePath).replace(/\.md$/, "") || "doc";
     const srcName = getBase(srcPath) || "image.png";
     const ext = srcName.split(".").pop() || "png";
     const baseName = srcName.replace(/\.[^.]+$/, "");
-    let imgName = `${mdName}-image-${baseName}.${ext}`;
+    let imgName = `${baseName}.${ext}`;
     let imgPath = `${folder}/${imgName}`;
     let counter = 2;
     while (await exists(imgPath)) {
-      imgName = `${mdName}-image-${baseName}-${counter}.${ext}`;
+      imgName = `${baseName}-${counter}.${ext}`;
       imgPath = `${folder}/${imgName}`;
       counter++;
     }
@@ -600,12 +750,11 @@ function App() {
     }
 
     const folder = getDir(filePath);
-    const mdName = getBase(filePath).replace(/\.md$/, "") || "doc";
-    let imgName = `${mdName}-image-${baseName}.${ext}`;
+    let imgName = `${baseName}.${ext}`;
     let imgPath = `${folder}/${imgName}`;
     let counter = 2;
     while (await exists(imgPath)) {
-      imgName = `${mdName}-image-${baseName}-${counter}.${ext}`;
+      imgName = `${baseName}-${counter}.${ext}`;
       imgPath = `${folder}/${imgName}`;
       counter++;
     }
@@ -615,7 +764,7 @@ function App() {
     await writeFile(imgPath, uint8);
 
     const pos = ed.state.selection.from;
-    ed.chain().focus().insertContentAt(pos, { type: "image", attrs: { src: convertFileSrc(imgPath), alt: file.name } }).run();
+    ed.chain().focus().insertContentAt(pos, { type: "image", attrs: { src: imgName, alt: file.name } }).run();
   }
 
   useEffect(() => {
@@ -1194,7 +1343,7 @@ function App() {
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
               )}
-              <img src={src} className="image-preview-img" />
+              <img src={resolveImageSrc(src)} className="image-preview-img" />
               {images.length > 1 && (
                 <button className="image-preview-nav image-preview-nav-right" title="Next" onClick={() => setImagePreviewIndex((prev) => prev !== null ? (prev + 1) % images.length : 0)}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
