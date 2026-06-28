@@ -778,8 +778,11 @@ function App() {
         if (code === "Enter") {
           e.preventDefault();
           const idx = paletteIndexRef.current;
-          if (paletteFilesRef.current[idx]) {
-            selectPaletteFile(paletteFilesRef.current[idx]);
+          const filtered = paletteQueryRef.current
+            ? paletteFilesRef.current.filter((f) => fuzzyMatch(paletteQueryRef.current, f.name))
+            : paletteFilesRef.current;
+          if (filtered[idx]) {
+            selectPaletteFile(filtered[idx]);
           }
           return;
         }
@@ -976,7 +979,10 @@ function App() {
               shouldShow={({ editor: e, state }) => {
                 if (!e.isFocused) return false;
                 const { from, to } = state.selection;
-                return from !== to;
+                if (from === to) return false;
+                const node = state.selection.$from.node(1) || state.doc.nodeAt(from);
+                if (node?.type.name === "image") return false;
+                return true;
               }}
             >
               <div className="bubble-menu">
