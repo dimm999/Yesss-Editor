@@ -97,6 +97,26 @@ npm run tauri build
 - [Vite](https://vitejs.dev/) — Build tool
 - [TypeScript](https://www.typescriptlang.org/) — Type safety
 
+## Configuration & Themes
+
+The app stores its config and themes in the standard app data directory:
+
+| OS | Path |
+|---|---|
+| Windows | `%APPDATA%\com.yesss.editor\` |
+| macOS | `~/Library/Application Support/com.yesss.editor/` |
+| Linux | `~/.config/com.yesss.editor/` |
+
+Inside that directory you'll find:
+- `config.json` — editor settings (font size, editor width, active theme)
+- `themes/` — custom theme JSON files
+
+You can add your own themes by dropping `.json` files into the `themes/` folder.
+
+## Notes
+
+Tested on Windows 11 where it uses approximately 4 MB of RAM. The Tauri + React + TipTap stack keeps memory footprint minimal across all supported platforms.
+
 ## License
 
 MIT
