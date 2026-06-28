@@ -5,6 +5,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
+import { Markdown } from "tiptap-markdown";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import {
@@ -13,6 +14,7 @@ import {
   writeFile,
   readFile,
   readDir,
+  exists,
   BaseDirectory,
 } from "@tauri-apps/plugin-fs";
 import { ask, save, open } from "@tauri-apps/plugin-dialog";
@@ -329,7 +331,7 @@ function App() {
       const folder = getDir(filePath);
       setCurrentFolder(folder);
     }
-    const content = ed.getHTML();
+    const content = ed.storage.markdown.getMarkdown();
     await writeTextFile(filePath, content);
     setHasUnsavedChanges(false);
     showToast("File saved");
@@ -441,6 +443,12 @@ function App() {
         openOnClick: false,
         HTMLAttributes: { class: "editor-link" },
       }),
+      Markdown.configure({
+        html: true,
+        linkify: false,
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
     ],
     autofocus: "end",
     onUpdate: () => {
@@ -496,10 +504,18 @@ function App() {
 
   function getAllImages(): string[] {
     if (!editorRef.current) return [];
-    const html = editorRef.current.getHTML();
-    const div = document.createElement("div");
-    div.innerHTML = html;
-    return Array.from(div.querySelectorAll("img")).map((img) => img.getAttribute("src") || "");
+    const images: string[] = [];
+    const json = editorRef.current.getJSON();
+    function walk(node: any) {
+      if (node.type === "image" && node.attrs?.src) {
+        images.push(node.attrs.src);
+      }
+      if (node.content) {
+        for (const child of node.content) walk(child);
+      }
+    }
+    walk(json);
+    return images;
   }
 
   function handleImageClick(e: Event) {
@@ -548,8 +564,14 @@ function App() {
     const srcName = getBase(srcPath) || "image.png";
     const ext = srcName.split(".").pop() || "png";
     const baseName = srcName.replace(/\.[^.]+$/, "");
-    const imgName = `${mdName}-image-${baseName}.${ext}`;
-    const imgPath = `${folder}/${imgName}`;
+    let imgName = `${mdName}-image-${baseName}.${ext}`;
+    let imgPath = `${folder}/${imgName}`;
+    let counter = 2;
+    while (await exists(imgPath)) {
+      imgName = `${mdName}-image-${baseName}-${counter}.${ext}`;
+      imgPath = `${folder}/${imgName}`;
+      counter++;
+    }
 
     const data = await readFile(srcPath);
     await writeFile(imgPath, data);
@@ -579,8 +601,14 @@ function App() {
 
     const folder = getDir(filePath);
     const mdName = getBase(filePath).replace(/\.md$/, "") || "doc";
-    const imgName = `${mdName}-image-${baseName}.${ext}`;
-    const imgPath = `${folder}/${imgName}`;
+    let imgName = `${mdName}-image-${baseName}.${ext}`;
+    let imgPath = `${folder}/${imgName}`;
+    let counter = 2;
+    while (await exists(imgPath)) {
+      imgName = `${mdName}-image-${baseName}-${counter}.${ext}`;
+      imgPath = `${folder}/${imgName}`;
+      counter++;
+    }
 
     const arrayBuffer = await file.arrayBuffer();
     const uint8 = new Uint8Array(arrayBuffer);
@@ -660,20 +688,29 @@ function App() {
       if (dragSrc === dropSrc) return;
       e.preventDefault();
       e.stopPropagation();
-      const html = editorRef.current?.getHTML() || "";
-      const tmp = document.createElement("div");
-      tmp.innerHTML = html;
-      const imgs = Array.from(tmp.querySelectorAll("img"));
-      const dragIdx = imgs.findIndex((img) => img.getAttribute("src") === dragSrc);
-      const dropIdx = imgs.findIndex((img) => img.getAttribute("src") === dropSrc);
-      if (dragIdx < 0 || dropIdx < 0 || dragIdx === dropIdx) return;
-      const dragEl = imgs[dragIdx];
-      if (dragIdx < dropIdx) {
-        dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx].nextSibling);
-      } else {
-        dragEl.parentNode?.insertBefore(dragEl, imgs[dropIdx]);
+      const json = editorRef.current?.getJSON();
+      if (!json) return;
+      const allNodes: { node: any; parent: any; index: number }[] = [];
+      function collect(n: any, parent: any, idx: number) {
+        allNodes.push({ node: n, parent, index: idx });
+        if (n.content) n.content.forEach((c: any, i: number) => collect(c, n, i));
       }
-      editorRef.current?.commands.setContent(tmp.innerHTML);
+      collect(json, null, 0);
+      const imageNodes = allNodes.filter((n) => n.node.type === "image");
+      const dragEntry = imageNodes.find((n) => n.node.attrs?.src === dragSrc);
+      const dropEntry = imageNodes.find((n) => n.node.attrs?.src === dropSrc);
+      if (!dragEntry || !dropEntry || dragEntry === dropEntry) return;
+      const dragParent = dragEntry.parent;
+      const dropParent = dropEntry.parent;
+      const dragArr = dragParent?.content || json.content;
+      const dropArr = dropParent?.content || json.content;
+      const fromIdx = dragArr.indexOf(dragEntry.node);
+      const toIdx = dropArr.indexOf(dropEntry.node);
+      if (fromIdx < 0 || toIdx < 0) return;
+      dragArr.splice(fromIdx, 1);
+      const adjustedIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+      dropArr.splice(adjustedIdx, 0, dragEntry.node);
+      editorRef.current?.commands.setContent(json);
     }
 
     document.addEventListener("dragstart", onDragStart, true);
