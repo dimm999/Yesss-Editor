@@ -4,7 +4,7 @@
 
 <h1 align="center">Yesss Editor</h1>
 
-<p align="center">A minimal, distraction-free Markdown editor built with Tauri and TipTap.</p>
+<p align="center">A minimal, distraction-free inline preview Markdown editor built with Tauri and TipTap. Only ~4 MB of RAM on Windows 11.</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" />
@@ -20,7 +20,6 @@
 - **Bubble menu toolbar** — Formatting toolbar appears on text selection
 - **Image support** — Paste, drag & drop, or insert images directly into your document
 - **Image preview** — Full-screen gallery with navigation between images
-- **Image reorder** — Drag and drop to rearrange images within the document
 - **Command palette** — Quick file search with fuzzy matching (`Ctrl + \`)
 - **Zen mode** — Fullscreen distraction-free writing (`Ctrl + Shift + F`)
 - **Theming** — 5 built-in themes: Light, Dark, Catppuccin, Espresso, Tokyo Night
