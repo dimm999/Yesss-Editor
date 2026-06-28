@@ -4,7 +4,7 @@
 
 <h1 align="center">Yesss Editor</h1>
 
-<p align="center">A minimal, distraction-free inline preview Markdown editor built with Tauri and TipTap. Only ~4 MB of RAM on Windows 11.</p>
+<p align="center">A minimal, distraction-free Markdown editor with inline preview, built with Tauri and TipTap. Lightweight and cross-platform — runs on Windows, macOS, and Linux.</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" />
