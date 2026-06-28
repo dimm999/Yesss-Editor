@@ -52,6 +52,7 @@ interface Config {
 interface MdFile {
   name: string;
   path: string;
+  relativePath: string;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -324,8 +325,9 @@ async function listThemes(): Promise<string[]> {
   }
 }
 
-async function scanMdFiles(dirPath: string): Promise<MdFile[]> {
+async function scanMdFiles(dirPath: string, rootPath?: string): Promise<MdFile[]> {
   const normalized = dirPath.replace(/\\/g, "/");
+  const root = (rootPath || dirPath).replace(/\\/g, "/");
   const results: MdFile[] = [];
   try {
     const entries = await readDir(normalized);
@@ -333,10 +335,11 @@ async function scanMdFiles(dirPath: string): Promise<MdFile[]> {
       if (!entry.name) continue;
       const fullPath = `${normalized}/${entry.name}`;
       if (entry.isDirectory) {
-        const nested = await scanMdFiles(fullPath);
+        const nested = await scanMdFiles(fullPath, root);
         results.push(...nested);
       } else if (entry.name.endsWith(".md")) {
-        results.push({ name: entry.name, path: fullPath });
+        const rel = fullPath.startsWith(root + "/") ? fullPath.slice(root.length + 1) : entry.name;
+        results.push({ name: entry.name, path: fullPath, relativePath: rel });
       }
     }
   } catch (e) {
@@ -345,14 +348,20 @@ async function scanMdFiles(dirPath: string): Promise<MdFile[]> {
   return results;
 }
 
-function fuzzyMatch(query: string, target: string): boolean {
-  const q = query.toLowerCase();
-  const t = target.toLowerCase();
-  let qi = 0;
-  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
-    if (t[ti] === q[qi]) qi++;
+function fuzzyMatch(query: string, target: MdFile): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const t = target.relativePath.toLowerCase();
+  let pos = 0;
+  for (const word of words) {
+    let qi = 0;
+    let found = false;
+    for (let ti = pos; ti < t.length && qi < word.length; ti++) {
+      if (t[ti] === word[qi]) qi++;
+      if (qi === word.length) { pos = ti + 1; found = true; break; }
+    }
+    if (!found) return false;
   }
-  return qi === q.length;
+  return true;
 }
 
 function formatTime(date: Date): string {
@@ -573,7 +582,7 @@ function App() {
   }
 
   const paletteFiltered = paletteQuery
-    ? paletteFiles.filter((f) => fuzzyMatch(paletteQuery, f.name))
+    ? paletteFiles.filter((f) => fuzzyMatch(paletteQuery, f))
     : paletteFiles;
 
   const editor = useEditor({
@@ -777,6 +786,30 @@ function App() {
     const unlisten = getCurrentWindow().onDragDropEvent((event) => {
       if (event.payload.type !== "drop") return;
       const paths = event.payload.paths;
+
+      const mdPaths = paths.filter((p) => p.endsWith(".md"));
+      if (mdPaths.length > 0) {
+        (async () => {
+          for (const p of mdPaths) {
+            const result = await askUnsavedChanges();
+            if (result === "cancel") break;
+            if (result === "save") {
+              await saveFile();
+            }
+            const content = await readTextFile(p);
+            setCurrentFile(p);
+            setCurrentFolder(getDir(p));
+            currentFolderRef.current = getDir(p);
+            currentFolderModuleRef.current = getDir(p);
+            setHasUnsavedChanges(false);
+            if (editorRef.current) {
+              loadMarkdown(editorRef.current, content);
+            }
+          }
+        })();
+        return;
+      }
+
       const imageExts = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"];
       const imagePaths = paths.filter((p) => {
         const ext = p.split(".").pop()?.toLowerCase() || "";
@@ -965,7 +998,7 @@ function App() {
           e.preventDefault();
           const idx = paletteIndexRef.current;
           const filtered = paletteQueryRef.current
-            ? paletteFilesRef.current.filter((f) => fuzzyMatch(paletteQueryRef.current, f.name))
+            ? paletteFilesRef.current.filter((f) => fuzzyMatch(paletteQueryRef.current, f))
             : paletteFilesRef.current;
           if (filtered[idx]) {
             selectPaletteFile(filtered[idx]);
@@ -1259,7 +1292,11 @@ function App() {
             <div className="info-panel-content">
               <div className="info-item">
                 <span className="info-label">File</span>
-                <span className="info-value">{currentFile ? getBase(currentFile) : "—"}</span>
+                <span className="info-value">{currentFile ? (() => {
+                  const base = currentFile.replace(/\\/g, "/");
+                  const folder = currentFolder?.replace(/\\/g, "/") || "";
+                  return folder && base.startsWith(folder + "/") ? base.slice(folder.length + 1) : getBase(currentFile);
+                })() : "—"}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Folder</span>
@@ -1313,7 +1350,7 @@ function App() {
                   onClick={() => selectPaletteFile(file)}
                   onMouseEnter={() => setPaletteIndex(i)}
                 >
-                  {file.name}
+                  {file.relativePath}
                 </div>
               ))}
             </div>
