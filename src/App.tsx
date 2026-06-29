@@ -15,6 +15,7 @@ import {
   readFile,
   readDir,
   exists,
+  mkdir,
   BaseDirectory,
 } from "@tauri-apps/plugin-fs";
 import { ask, save, open } from "@tauri-apps/plugin-dialog";
@@ -295,6 +296,7 @@ async function loadConfig(): Promise<Config> {
 }
 
 async function saveConfig(config: Config) {
+  await mkdir("", { baseDir: BaseDirectory.AppConfig, recursive: true });
   await writeTextFile(
     "config.json",
     JSON.stringify(config, null, 2),
