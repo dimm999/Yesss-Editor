@@ -284,7 +284,7 @@ function applyEditorWidth(width: number) {
 async function loadConfig(): Promise<Config> {
   try {
     const raw = await readTextFile("config.json", {
-      baseDir: BaseDirectory.AppData,
+      baseDir: BaseDirectory.AppConfig,
     });
     return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
   } catch {
@@ -296,33 +296,32 @@ async function saveConfig(config: Config) {
   await writeTextFile(
     "config.json",
     JSON.stringify(config, null, 2),
-    { baseDir: BaseDirectory.AppData }
+    { baseDir: BaseDirectory.AppConfig }
   );
 }
 
 async function loadTheme(name: string): Promise<Theme> {
-  try {
-    const raw = await readTextFile(`themes/${name}`, {
-      baseDir: BaseDirectory.AppData,
-    });
-    return JSON.parse(raw);
-  } catch {
-    return DEFAULT_THEME;
+  for (const base of [BaseDirectory.Resource, BaseDirectory.AppConfig]) {
+    try {
+      const raw = await readTextFile(`themes/${name}`, { baseDir: base });
+      return JSON.parse(raw);
+    } catch {}
   }
+  return DEFAULT_THEME;
 }
 
 async function listThemes(): Promise<string[]> {
-  try {
-    const entries = await readDir("themes", {
-      baseDir: BaseDirectory.AppData,
-    });
-    return entries
-      .filter((e) => e.name?.endsWith(".json"))
-      .map((e) => e.name!)
-      .sort();
-  } catch {
-    return ["light.json"];
+  const all = new Set<string>();
+  for (const base of [BaseDirectory.Resource, BaseDirectory.AppConfig]) {
+    try {
+      const entries = await readDir("themes", { baseDir: base });
+      for (const e of entries) {
+        if (e.name?.endsWith(".json")) all.add(e.name);
+      }
+    } catch {}
   }
+  if (all.size === 0) return ["light.json"];
+  return [...all].sort();
 }
 
 async function scanMdFiles(dirPath: string, rootPath?: string): Promise<MdFile[]> {

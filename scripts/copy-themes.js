@@ -5,11 +5,11 @@ import { homedir } from "os";
 const platform = process.platform;
 let configDir;
 if (platform === "win32") {
-  configDir = join(homedir(), "AppData", "Roaming", "com.yesss.editor");
+  configDir = join(homedir(), "AppData", "Roaming", "yesss-editor");
 } else if (platform === "darwin") {
-  configDir = join(homedir(), "Library", "Application Support", "com.yesss.editor");
+  configDir = join(homedir(), "Library", "Application Support", "yesss-editor");
 } else {
-  configDir = join(homedir(), ".config", "com.yesss.editor");
+  configDir = join(homedir(), ".config", "yesss-editor");
 }
 const appDir = configDir;
 const themeDir = join(appDir, "themes");
