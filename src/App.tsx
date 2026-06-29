@@ -224,6 +224,14 @@ const DEFAULT_THEME: Theme = {
   "scrollbar-hover": "#aaaaaa",
 };
 
+const DEFAULT_THEMES: Record<string, string> = {
+  "light.json": '{"name":"Light","background":"#ffffff","text":"#000000","selection":"#c2e8ff","placeholder":"#999999","heading":"#000000","strong":"#000000","em":"#333333","s":"#999999","blockquote-border":"#cccccc","blockquote-text":"#555555","code-bg":"#f0f0f0","code-text":"#c7254e","pre-bg":"#f5f5f5","pre-text":"#000000","hr":"#dddddd","scrollbar":"#cccccc","scrollbar-hover":"#aaaaaa"}',
+  "dark.json": '{"name":"Dark","background":"#1a1a2e","text":"#e0e0e0","selection":"#3a3a5e","placeholder":"#555555","heading":"#ffffff","strong":"#ffffff","em":"#cccccc","s":"#888888","blockquote-border":"#6c63ff","blockquote-text":"#aaaaaa","code-bg":"#2a2a3e","code-text":"#e06c75","pre-bg":"#16213e","pre-text":"#e0e0e0","hr":"#333333","scrollbar":"#333333","scrollbar-hover":"#555555"}',
+  "catppuccin.json": '{"name":"Catppuccin","background":"#1e1e2e","text":"#cdd6f4","selection":"#585b70","placeholder":"#6c7086","heading":"#cba6f7","strong":"#f5c2e7","em":"#a6e3a1","s":"#6c7086","blockquote-border":"#cba6f7","blockquote-text":"#bac2de","code-bg":"#313244","code-text":"#f38ba8","pre-bg":"#313244","pre-text":"#cdd6f4","hr":"#45475a","scrollbar":"#45475a","scrollbar-hover":"#585b70"}',
+  "tokyo-night.json": '{"name":"Tokyo Night","background":"#1a1b26","text":"#c0caf5","selection":"#33467c","placeholder":"#565f89","heading":"#bb9af7","strong":"#ff9e64","em":"#9ece6a","s":"#565f89","blockquote-border":"#bb9af7","blockquote-text":"#a9b1d6","code-bg":"#24283b","code-text":"#f7768e","pre-bg":"#24283b","pre-text":"#c0caf5","hr":"#3b4261","scrollbar":"#3b4261","scrollbar-hover":"#565f89"}',
+  "espresso.json": '{"name":"Espresso","background":"#1e1e1e","text":"#d4d4d4","selection":"#4a4a4a","placeholder":"#6a6a6a","heading":"#ffffff","strong":"#e2b93d","em":"#40b5c4","s":"#6a6a6a","blockquote-border":"#e2b93d","blockquote-text":"#a1a1a1","code-bg":"#2d2d2d","code-text":"#f07178","pre-bg":"#2d2d2d","pre-text":"#d4d4d4","hr":"#3a3a3a","scrollbar":"#3a3a3a","scrollbar-hover":"#5a5a5a"}',
+};
+
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 40;
 const FONT_SIZE_STEP = 2;
@@ -309,13 +317,9 @@ async function ensureThemes(): Promise<void> {
     const entries = await readDir("themes", { baseDir: BaseDirectory.AppConfig });
     if (entries.length > 0) return;
   } catch {}
-  const themeNames = ["light.json", "dark.json", "catppuccin.json", "tokyo-night.json", "espresso.json"];
   await mkdir("themes", { baseDir: BaseDirectory.AppConfig, recursive: true });
-  for (const name of themeNames) {
-    try {
-      const raw = await readTextFile(`themes/${name}`, { baseDir: BaseDirectory.Resource });
-      await writeTextFile(`themes/${name}`, raw, { baseDir: BaseDirectory.AppConfig });
-    } catch {}
+  for (const [name, content] of Object.entries(DEFAULT_THEMES)) {
+    await writeTextFile(`themes/${name}`, content, { baseDir: BaseDirectory.AppConfig });
   }
 }
 
