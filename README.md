@@ -7,7 +7,7 @@
 <p align="center">A minimal, distraction-free Markdown editor with inline preview, built with Tauri and TipTap. Lightweight and cross-platform — runs on Windows, macOS, and Linux.</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/version-0.3.2-blue" alt="Version" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform" />
 </p>
@@ -105,9 +105,9 @@ The app stores its config and themes in the standard app data directory:
 
 | OS | Path |
 |---|---|
-| Windows | `%APPDATA%\com.yesss.editor\` |
-| macOS | `~/Library/Application Support/com.yesss.editor/` |
-| Linux | `~/.config/com.yesss.editor/` |
+| Windows | `%APPDATA%\yesss-editor\` |
+| macOS | `~/Library/Application Support/yesss-editor/` |
+| Linux | `~/.config/yesss-editor/` |
 
 Inside that directory you'll find:
 - `config.json` — editor settings (font size, editor width, active theme)
