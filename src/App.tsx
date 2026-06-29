@@ -289,7 +289,7 @@ async function loadConfig(): Promise<Config> {
     return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
   } catch {
     const cfg = DEFAULT_CONFIG;
-    await saveConfig(cfg);
+    try { await saveConfig(cfg); } catch {}
     return cfg;
   }
 }
@@ -927,7 +927,7 @@ function App() {
       applyEditorWidth(cfg.editor_width);
       setReady(true);
     }
-    init();
+    init().catch(() => setReady(true));
   }, []);
 
   useEffect(() => {
