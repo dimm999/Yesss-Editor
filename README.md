@@ -115,9 +115,6 @@ Inside that directory you'll find:
 
 You can add your own themes by dropping `.json` files into the `themes/` folder.
 
-## Notes
-
-Tested on Windows 11 where it uses approximately 4 MB of RAM. The Tauri + React + TipTap stack keeps memory footprint minimal across all supported platforms.
 
 ## License
 
