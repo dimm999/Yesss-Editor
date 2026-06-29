@@ -288,7 +288,9 @@ async function loadConfig(): Promise<Config> {
     });
     return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
   } catch {
-    return DEFAULT_CONFIG;
+    const cfg = DEFAULT_CONFIG;
+    await saveConfig(cfg);
+    return cfg;
   }
 }
 
