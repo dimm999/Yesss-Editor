@@ -2,7 +2,16 @@ import { mkdirSync, copyFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
-const appDir = join(homedir(), "AppData", "Roaming", "com.yesss.editor");
+const platform = process.platform;
+let configDir;
+if (platform === "win32") {
+  configDir = join(homedir(), "AppData", "Roaming", "com.yesss.editor");
+} else if (platform === "darwin") {
+  configDir = join(homedir(), "Library", "Application Support", "com.yesss.editor");
+} else {
+  configDir = join(homedir(), ".config", "com.yesss.editor");
+}
+const appDir = configDir;
 const themeDir = join(appDir, "themes");
 
 mkdirSync(themeDir, { recursive: true });
