@@ -304,28 +304,36 @@ async function saveConfig(config: Config) {
   );
 }
 
-async function loadTheme(name: string): Promise<Theme> {
-  for (const base of [BaseDirectory.Resource, BaseDirectory.AppConfig]) {
+async function ensureThemes(): Promise<void> {
+  try {
+    const entries = await readDir("themes", { baseDir: BaseDirectory.AppConfig });
+    if (entries.length > 0) return;
+  } catch {}
+  const themeNames = ["light.json", "dark.json", "catppuccin.json", "tokyo-night.json", "espresso.json"];
+  await mkdir("themes", { baseDir: BaseDirectory.AppConfig, recursive: true });
+  for (const name of themeNames) {
     try {
-      const raw = await readTextFile(`themes/${name}`, { baseDir: base });
-      return JSON.parse(raw);
+      const raw = await readTextFile(`themes/${name}`, { baseDir: BaseDirectory.Resource });
+      await writeTextFile(`themes/${name}`, raw, { baseDir: BaseDirectory.AppConfig });
     } catch {}
   }
+}
+
+async function loadTheme(name: string): Promise<Theme> {
+  try {
+    const raw = await readTextFile(`themes/${name}`, { baseDir: BaseDirectory.AppConfig });
+    return JSON.parse(raw);
+  } catch {}
   return DEFAULT_THEME;
 }
 
 async function listThemes(): Promise<string[]> {
-  const all = new Set<string>();
-  for (const base of [BaseDirectory.Resource, BaseDirectory.AppConfig]) {
-    try {
-      const entries = await readDir("themes", { baseDir: base });
-      for (const e of entries) {
-        if (e.name?.endsWith(".json")) all.add(e.name);
-      }
-    } catch {}
-  }
-  if (all.size === 0) return ["light.json"];
-  return [...all].sort();
+  try {
+    const entries = await readDir("themes", { baseDir: BaseDirectory.AppConfig });
+    const names = entries.filter((e) => e.name?.endsWith(".json")).map((e) => e.name!);
+    if (names.length > 0) return names.sort();
+  } catch {}
+  return ["light.json"];
 }
 
 async function scanMdFiles(dirPath: string, rootPath?: string): Promise<MdFile[]> {
@@ -920,6 +928,7 @@ function App() {
     async function init() {
       const cfg = await loadConfig();
       setConfig(cfg);
+      await ensureThemes();
       const themes = await listThemes();
       setThemeList(themes);
       const theme = await loadTheme(cfg.theme);
